@@ -1,0 +1,22 @@
+resources:
+  - name: source
+    type: git
+    source:
+      uri: "https://github.com/sirnuke/reverse-rogue-concept.git"
+      tag_filter: "v*"
+      username: ((github_username))
+      password: ((github_access_token))
+    check_every: "30m"
+
+jobs:
+  - name: gradle
+    plan:
+      - get: source
+        trigger: true
+      - task: execute-gradle
+        file: source/ci/build.yml
+        params:
+          BUILD_TYPE: release
+        vars:
+          nexus_username: ((nexus_username))
+          nexus_password: ((nexus_password))
