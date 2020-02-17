@@ -66,7 +66,10 @@ subprojects {
         password = internalNexusPassword
       }
       url = uri("$internalNexusURL/repository/maven-public")
-      name = "Internal Nexus"
+      // NOTE: Gradle 7 isn't going to play ball with http unless this is set.  However, while this option exists
+      // in 6.1.1, it is not (yet) part of the Kotlin DSL :/
+      // allowInsecureProtocol = true
+      name = "Internal-Nexus"
     }
   }
 
