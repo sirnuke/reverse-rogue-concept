@@ -7,16 +7,21 @@ application {
 }
 
 repositories {
-    maven {
-      url = uri("https://jitpack.io")
-    }
+  maven {
+    url = uri("https://jitpack.io")
+  }
+}
+
+buildscript {
+  extra.set("zirconVersion", "2020.0.1-PREVIEW")
 }
 
 dependencies {
-    implementation("org.hexworks.zircon:zircon.core-jvm:2020.0.1-PREVIEW")
-    implementation("org.hexworks.zircon:zircon.jvm.swing:2020.0.1-PREVIEW")
-    implementation("info.picocli:picocli:4.1.1")
-    implementation(project(":reverse-rogue-common"))
-    implementation(project(":reverse-rogue-world"))
-    implementation(project(":reverse-rogue-agent"))
+  val zirconVersion = project.extra.get("zirconVersion")!!
+  implementation("org.hexworks.zircon:zircon.core-jvm:$zirconVersion")
+  implementation("org.hexworks.zircon:zircon.jvm.swing:$zirconVersion")
+  implementation("info.picocli:picocli:4.1.1")
+  implementation(project(":reverse-rogue-common"))
+  implementation(project(":reverse-rogue-world"))
+  implementation(project(":reverse-rogue-agent"))
 }
