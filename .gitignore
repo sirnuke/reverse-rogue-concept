@@ -26,5 +26,8 @@ hs_err_pid*
 .gradle/
 build/
 
+# IntelliJ
+.idea/
+
 # Misc
 .*.sw*
