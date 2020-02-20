@@ -4,6 +4,8 @@ import com.degrendel.reverserogue.common.Level
 import com.degrendel.reverserogue.common.TileType
 import com.degrendel.reverserogue.common.logger
 import com.github.czyzby.noise4j.map.Grid
+import com.github.czyzby.noise4j.map.generator.room.AbstractRoomGenerator.Room
+import com.github.czyzby.noise4j.map.generator.room.RoomType
 import com.github.czyzby.noise4j.map.generator.room.dungeon.DungeonGenerator
 
 class LevelState : Level
@@ -15,6 +17,20 @@ class LevelState : Level
 
   private val data = mutableListOf<MutableList<TileType>>()
 
+  val rooms = mutableListOf<String>()
+
+  private val roomListener = object : RoomType
+  {
+    override fun carve(room: Room, grid: Grid, value: Float)
+    {
+      L.info("Carving room {}x{}", room.width, room.height)
+      rooms.add("${room.width}x${room.height}")
+      room.fill(grid, value)
+    }
+
+    override fun isValid(room: Room) = true
+  }
+
   init
   {
     for (x in 0 until Level.WIDTH)
@@ -25,6 +41,8 @@ class LevelState : Level
       data += row
     }
     val dungeonGenerator = DungeonGenerator()
+    dungeonGenerator.addRoomType(roomListener)
+    dungeonGenerator.minRoomSize = 5
     val grid = Grid(32)
 
     dungeonGenerator.generate(grid)
