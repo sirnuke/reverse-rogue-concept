@@ -1,0 +1,9 @@
+{
+    "entryPoints": [
+        {
+            "path": "reverse-rogue-agent/src/main/resources/com/degrendel/reverserogue/soar/load.soar",
+            "name": "rogue"
+        }
+    ],
+    "active": "rogue"
+}

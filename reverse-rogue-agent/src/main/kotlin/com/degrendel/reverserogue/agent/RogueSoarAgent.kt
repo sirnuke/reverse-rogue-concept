@@ -15,10 +15,12 @@ class RogueSoarAgent : SoarAgent
     val L by logger()
   }
 
-  private val agent = ThreadedAgent.create("Wanbot")!!
+  private val agent: ThreadedAgent
 
   init
   {
+    System.setProperty("jsoar.agent.interpreter", "tcl")
+    agent = ThreadedAgent.create("Rogue")!!
     try
     {
       SoarCommands.source(agent.interpreter, javaClass.getResource("/com/degrendel/reverserogue/soar/load.soar"))
