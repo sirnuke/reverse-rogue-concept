@@ -2,7 +2,7 @@
   <configuration default="false" name="Ziron w/ Debugger" type="JetRunConfigurationType" factoryName="Kotlin">
     <module name="reverse-rogue-concept.reverse-rogue-zircon.main" />
     <option name="VM_PARAMETERS" value="" />
-    <option name="PROGRAM_PARAMETERS" value="--soar-debugger" />
+    <option name="PROGRAM_PARAMETERS" value="--soar-debugger --zircon-debug-mode" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
     <option name="ALTERNATIVE_JRE_PATH" />
     <option name="PASS_PARENT_ENVS" value="true" />
