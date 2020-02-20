@@ -1,5 +1,7 @@
 package com.degrendel.reverserogue.zircon
 
+import com.degrendel.reverserogue.agent.RogueSoarAgent
+import com.degrendel.reverserogue.common.SoarAgent
 import org.hexworks.zircon.api.ColorThemes
 import org.hexworks.zircon.api.Components
 import org.hexworks.zircon.api.SwingApplications
@@ -13,10 +15,15 @@ import kotlin.concurrent.withLock
 
 class Application(private val lock: ReentrantLock, private val condition: Condition)
 {
+  val agent: SoarAgent = RogueSoarAgent()
+
   fun launch()
   {
     val tileGrid = SwingApplications.startTileGrid()
     val screen = Screen.create(tileGrid)
+
+    screen.onShutdown { lock.withLock { condition.signal() } }
+
     val panel = Components.panel()
         .withSize(Size.create(4, 5))
         .withDecorations(box())
@@ -26,9 +33,8 @@ class Application(private val lock: ReentrantLock, private val condition: Condit
 
     panel.processMouseEvents(MouseEventType.MOUSE_MOVED) { event, _ -> println(event) }
 
-    screen.display()
     screen.theme = ColorThemes.adriftInDreams()
 
-    screen.onShutdown { lock.withLock { condition.signal() } }
+    screen.display()
   }
 }
