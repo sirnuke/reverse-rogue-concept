@@ -1,10 +1,7 @@
 package com.degrendel.reverserogue.zircon
 
 import com.degrendel.reverserogue.agent.RogueSoarAgent
-import com.degrendel.reverserogue.common.SoarAgent
-import com.degrendel.reverserogue.common.TileType
-import com.degrendel.reverserogue.common.World
-import com.degrendel.reverserogue.common.logger
+import com.degrendel.reverserogue.common.*
 import com.degrendel.reverserogue.world.RogueWorld
 import org.hexworks.zircon.api.CP437TilesetResources
 import org.hexworks.zircon.api.ColorThemes
@@ -53,7 +50,7 @@ class Application(private val lock: ReentrantLock, private val condition: Condit
 
     val tileGrid = SwingApplications.startTileGrid(
         AppConfig.newBuilder()
-            .withSize(64, 64)
+            .withSize(Level.WIDTH, Level.HEIGHT)
             .withDefaultTileset(CP437TilesetResources.rexPaint16x16())
             .withDebugConfig(debugConfig)
             .withDebugMode(zirconDebug)

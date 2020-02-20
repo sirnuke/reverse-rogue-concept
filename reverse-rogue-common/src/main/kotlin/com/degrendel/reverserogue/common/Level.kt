@@ -4,7 +4,8 @@ interface Level
 {
   companion object
   {
-    const val SIZE = 32
+    const val HEIGHT = 32
+    const val WIDTH = 64
   }
 
   fun get(x: Int, y: Int): TileType

@@ -17,10 +17,10 @@ class LevelState : Level
 
   init
   {
-    for (x in 0 until Level.SIZE)
+    for (x in 0 until Level.WIDTH)
     {
       val row = mutableListOf<TileType>()
-      for (y in 0 until Level.SIZE)
+      for (y in 0 until Level.HEIGHT)
         row += TileType.BLOCKED
       data += row
     }
