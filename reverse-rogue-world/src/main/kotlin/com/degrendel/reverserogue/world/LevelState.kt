@@ -16,15 +16,17 @@ class LevelState : Level
     private val L by logger()
   }
 
-  private val map = mutableListOf<MutableList<Square>>()
+  private val map = mutableListOf<MutableList<SquareImplementation>>()
+
+  private val entities = mutableListOf<Entity>()
 
   init
   {
     for (x in 0 until Level.WIDTH)
     {
-      val row = mutableListOf<Square>()
+      val row = mutableListOf<SquareImplementation>()
       for (y in 0 until Level.HEIGHT)
-        row += Square(x, y, SquareType.BLOCKED)
+        row += SquareImplementation(Position(x, y), SquareType.BLOCKED)
       map += row
     }
     val rooms = mutableListOf<Room>()
@@ -53,7 +55,7 @@ class LevelState : Level
         0.0f -> SquareType.CORRIDOR
         else -> throw IllegalStateException("Unexpected value $value")
       }
-      map[x][y] = Square(x, y, type)
+      map[x][y] = SquareImplementation(Position(x, y), type)
       false
     }
 
@@ -63,9 +65,9 @@ class LevelState : Level
       map[x][y] = if (map[x][y].blocked)
       {
         walls += Pair(x, y)
-        Square(x, y, SquareType.WALL)
+        SquareImplementation(Position(x, y), SquareType.WALL)
       }
-      else Square(x, y, SquareType.DOOR)
+      else SquareImplementation(Position(x, y), SquareType.DOOR)
     }
 
     rooms.forEach { room ->
@@ -84,11 +86,10 @@ class LevelState : Level
 
     walls.forEach { (x, y) ->
       Cardinal.values().forEach {
-        val checkX = x + it.x
-        val checkY = y + it.y
-        if (inBounds(checkX, checkY))
+        val check = Position(x + it.x, y + it.y)
+        if (inBounds(check))
         {
-          val neighbor = map[checkX][checkY]
+          val neighbor = map[check.x][check.y]
           if (neighbor.type == SquareType.WALL || neighbor.type == SquareType.DOOR)
             map[x][y] = map[x][y].addWallDirection(it)
         }
@@ -96,18 +97,68 @@ class LevelState : Level
     }
   }
 
-  override fun inBounds(x: Int, y: Int) = (x >= 0 && y >= 0 && x < Level.WIDTH && y < Level.HEIGHT)
+  override fun inBounds(position: Position) = (position.x >= 0 && position.y >= 0 && position.x < Level.WIDTH && position.y < Level.HEIGHT)
 
-  override fun get(x: Int, y: Int): Square
+  override fun getSquare(position: Position): Square
   {
-    return map[x][y]
+    return map[position.x][position.y]
   }
 
-  override fun forEach(lambda: (square: Square) -> Unit)
+  override fun forEachSquare(lambda: (square: Square) -> Unit)
   {
     map.forEach { row ->
       row.forEach { square -> lambda(square) }
     }
   }
+
+  override fun forEachEntity(lambda: (entity: Entity) -> Unit) = entities.forEach(lambda)
+
+  override fun spawnEntity(position: Position, entity: Entity)
+  {
+    TODO("not implemented")
+  }
+
+  override fun moveEntity(from: Position, to: Position, entity: Entity)
+  {
+    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+  }
+}
+
+data class SquareImplementation(override val position: Position, override val type: SquareType, val wallDirections: Set<Cardinal> = setOf()) : Square
+{
+  override val blocked: Boolean = (type == SquareType.BLOCKED || type == SquareType.WALL)
+  override val wallDirection: WallDirection = wallDirectionConversion.getValue(wallDirections)
+
+  var currentEntity: Entity? = null
+
+  override val entity = currentEntity
+
+  companion object
+  {
+    // Ick.  I'm guessing there's some math function to do this, but whatever
+    // Could do this a bit more efficiently with bitmasks, but this lookup should still be fairly quick, and only
+    // done once per level generation.  Compared to the memory hog that is Soar, probably not that expensive to just
+    // keep them in memory for when the rogue starts going back up the stairs.
+    val wallDirectionConversion = mapOf(
+        setOf<Cardinal>() to WallDirection.NONE,
+        setOf(Cardinal.NORTH) to WallDirection.NORTH_SOUTH,
+        setOf(Cardinal.SOUTH) to WallDirection.NORTH_SOUTH,
+        setOf(Cardinal.NORTH, Cardinal.SOUTH) to WallDirection.NORTH_SOUTH,
+        setOf(Cardinal.EAST) to WallDirection.EAST_WEST,
+        setOf(Cardinal.WEST) to WallDirection.EAST_WEST,
+        setOf(Cardinal.EAST, Cardinal.WEST) to WallDirection.EAST_WEST,
+        setOf(Cardinal.NORTH, Cardinal.EAST) to WallDirection.NORTH_EAST,
+        setOf(Cardinal.EAST, Cardinal.SOUTH) to WallDirection.EAST_SOUTH,
+        setOf(Cardinal.SOUTH, Cardinal.WEST) to WallDirection.SOUTH_WEST,
+        setOf(Cardinal.WEST, Cardinal.NORTH) to WallDirection.WEST_NORTH,
+        setOf(Cardinal.NORTH, Cardinal.EAST, Cardinal.SOUTH) to WallDirection.NORTH_EAST_SOUTH,
+        setOf(Cardinal.EAST, Cardinal.SOUTH, Cardinal.WEST) to WallDirection.EAST_SOUTH_WEST,
+        setOf(Cardinal.SOUTH, Cardinal.WEST, Cardinal.NORTH) to WallDirection.SOUTH_WEST_NORTH,
+        setOf(Cardinal.WEST, Cardinal.NORTH, Cardinal.EAST) to WallDirection.WEST_NORTH_EAST,
+        setOf(Cardinal.NORTH, Cardinal.EAST, Cardinal.SOUTH, Cardinal.WEST) to WallDirection.ALL
+    )
+  }
+
+  fun addWallDirection(dir: Cardinal) = SquareImplementation(position, type, wallDirections.plus(dir))
 }
 

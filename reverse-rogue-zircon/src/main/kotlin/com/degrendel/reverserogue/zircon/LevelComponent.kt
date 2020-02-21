@@ -38,7 +38,12 @@ class LevelComponent(private val app: Application, private val layer: Layer, pri
 
   init
   {
-    level.forEach { square ->
+    refresh()
+  }
+
+  fun refresh()
+  {
+    level.forEachSquare { square ->
       val tile = when (square.type)
       {
         SquareType.BLOCKED -> blockedTile
@@ -47,7 +52,12 @@ class LevelComponent(private val app: Application, private val layer: Layer, pri
         SquareType.WALL -> wallTiles.getValue(square.wallDirection)
         SquareType.DOOR -> doorTile
       }
-      layer.draw(tile, Position.create(square.x, square.y))
+      layer.draw(tile, Position.create(square.position.x, square.position.y))
+    }
+
+    level.forEachEntity { entity ->
+      TODO("Stub!")
     }
   }
+
 }

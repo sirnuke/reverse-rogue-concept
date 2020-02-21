@@ -8,46 +8,33 @@ interface Level
     const val WIDTH = 64
   }
 
-  fun get(x: Int, y: Int): Square
+  fun getSquare(position: Position): Square
 
-  fun inBounds(x: Int, y: Int): Boolean
+  fun inBounds(position: Position): Boolean
 
-  fun forEach(lambda: (square: Square) -> Unit)
+  fun forEachSquare(lambda: (square: Square) -> Unit)
+
+  fun forEachEntity(lambda: (entity: Entity) -> Unit)
+
+  fun spawnEntity(position: Position, entity: Entity)
+
+  fun moveEntity(from: Position, to: Position, entity: Entity)
 }
 
-data class Square(val x: Int, val y: Int, val type: SquareType, val wallDirections: Set<Cardinal> = setOf())
+data class Position(val x: Int, val y: Int)
 {
-  val blocked: Boolean = (type == SquareType.BLOCKED || type == SquareType.WALL)
-  val wallDirection: WallDirection = wallDirectionConversion.getValue(wallDirections)
-
-  companion object
-  {
-    // Ick.  I'm guessing there's some math function to do this, but whatever
-    // Could do this a bit more efficiently with bitmasks, but this lookup should still be fairly quick, and only
-    // done once per level generation.  Compared to the memory hog that is Soar, probably not that expensive to just
-    // keep them in memory for when the rogue starts going back up the stairs.
-    val wallDirectionConversion = mapOf(
-        setOf<Cardinal>() to WallDirection.NONE,
-        setOf(Cardinal.NORTH) to WallDirection.NORTH_SOUTH,
-        setOf(Cardinal.SOUTH) to WallDirection.NORTH_SOUTH,
-        setOf(Cardinal.NORTH, Cardinal.SOUTH) to WallDirection.NORTH_SOUTH,
-        setOf(Cardinal.EAST) to WallDirection.EAST_WEST,
-        setOf(Cardinal.WEST) to WallDirection.EAST_WEST,
-        setOf(Cardinal.EAST, Cardinal.WEST) to WallDirection.EAST_WEST,
-        setOf(Cardinal.NORTH, Cardinal.EAST) to WallDirection.NORTH_EAST,
-        setOf(Cardinal.EAST, Cardinal.SOUTH) to WallDirection.EAST_SOUTH,
-        setOf(Cardinal.SOUTH, Cardinal.WEST) to WallDirection.SOUTH_WEST,
-        setOf(Cardinal.WEST, Cardinal.NORTH) to WallDirection.WEST_NORTH,
-        setOf(Cardinal.NORTH, Cardinal.EAST, Cardinal.SOUTH) to WallDirection.NORTH_EAST_SOUTH,
-        setOf(Cardinal.EAST, Cardinal.SOUTH, Cardinal.WEST) to WallDirection.EAST_SOUTH_WEST,
-        setOf(Cardinal.SOUTH, Cardinal.WEST, Cardinal.NORTH) to WallDirection.SOUTH_WEST_NORTH,
-        setOf(Cardinal.WEST, Cardinal.NORTH, Cardinal.EAST) to WallDirection.WEST_NORTH_EAST,
-        setOf(Cardinal.NORTH, Cardinal.EAST, Cardinal.SOUTH, Cardinal.WEST) to WallDirection.ALL
-    )
-  }
-
-  fun addWallDirection(dir: Cardinal) = Square(x, y, type, wallDirections.plus(dir))
+  fun add(position: Position) = Position(x + position.x, y + position.y)
 }
+
+interface Square
+{
+  val position: Position
+  val type: SquareType
+  val wallDirection: WallDirection
+  val blocked: Boolean
+  val entity: Entity?
+}
+
 
 enum class SquareType
 {
