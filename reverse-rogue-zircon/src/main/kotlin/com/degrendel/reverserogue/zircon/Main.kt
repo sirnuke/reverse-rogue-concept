@@ -32,14 +32,10 @@ class Main : Callable<Int>
 
   override fun call(): Int
   {
-    L.info("Starting; soar debugger? {}; zircon debug mode? {}; draw grid?", soarDebugger, zirconDebugMode, drawZirconGrid)
-    val application = Application(lock, condition)
-
-    if (soarDebugger)
-      application.agent.openDebugger()
-
-    L.info("Launching application...")
-    application.launch(zirconDebugMode, drawZirconGrid)
+    L.info("Launching; soar debugger? {}; zircon debug mode? {}; draw grid?", soarDebugger, zirconDebugMode,
+        drawZirconGrid)
+    Application(lock, condition, soarDebugger = soarDebugger, zirconDebugMode = zirconDebugMode,
+        drawGrid = drawZirconGrid)
     lock.withLock { condition.await() }
     return 0
   }

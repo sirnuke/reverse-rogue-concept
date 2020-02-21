@@ -8,76 +8,86 @@ import org.hexworks.zircon.api.ColorThemes
 import org.hexworks.zircon.api.SwingApplications
 import org.hexworks.zircon.api.application.AppConfig
 import org.hexworks.zircon.api.application.DebugConfig
+import org.hexworks.zircon.api.builder.graphics.LayerBuilder
 import org.hexworks.zircon.api.data.Position
 import org.hexworks.zircon.api.data.Tile
+import org.hexworks.zircon.api.grid.TileGrid
 import org.hexworks.zircon.api.screen.Screen
+import org.hexworks.zircon.api.uievent.MouseEvent
+import org.hexworks.zircon.api.uievent.MouseEventType
+import org.hexworks.zircon.api.uievent.UIEventPhase
+import org.hexworks.zircon.api.uievent.UIEventResponse
 import java.util.*
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class Application(private val lock: ReentrantLock, private val condition: Condition)
+class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boolean = false, zirconDebugMode: Boolean = false, drawGrid: Boolean = false)
 {
   companion object
   {
     private val L by logger()
+    // FYI: (80 , 45) * 16 == (1280, 720), which is what FTL uses.  Probably reasonable
+    // If an another display (HTML5 compatible?) is added, should be moved to common
+    const val SCREEN_WIDTH = 80
+    const val SCREEN_HEIGHT = 45
+
+    const val MAP_OFFSET_X = 0
+    const val MAP_OFFSET_Y = 0
   }
 
   val agent: SoarAgent = RogueSoarAgent()
   val world: World = RogueWorld()
 
-  private val floorTile = Tile.defaultTile().withCharacter('.')
-  private val blockedTile = Tile.defaultTile().withCharacter(' ')
-  private val corridorTile = Tile.defaultTile().withCharacter('#')
-  private val doorTile = Tile.defaultTile().withCharacter('+')
-  private val rogueTile = Tile.defaultTile().withCharacter(0x263A.toChar())
 
-  private val wallTiles = EnumMap<WallDirection, Tile>(WallDirection::class.java)
+  private val tileGrid: TileGrid
+  private val screen: Screen
 
-  fun launch(zirconDebug: Boolean, drawGrid: Boolean)
+  private val mapComponent: MapComponent
+
+  init
   {
-    val level = world.generateLevel()
+    assert(SCREEN_WIDTH >= Level.WIDTH)
+    assert(SCREEN_HEIGHT >= Level.HEIGHT)
+
+    if (soarDebugger)
+      agent.openDebugger()
 
     val debugConfig = if (drawGrid)
       DebugConfig(displayGrid = true, displayCoordinates = true, displayFps = true)
     else
       DebugConfig(displayGrid = false, displayCoordinates = false, displayFps = true)
 
-    wallTiles[WallDirection.NORTH_SOUTH] = Tile.defaultTile().withCharacter(0x2551.toChar())
-    wallTiles[WallDirection.EAST_WEST] = Tile.defaultTile().withCharacter(0x2550.toChar())
-    wallTiles[WallDirection.NORTH_EAST] = Tile.defaultTile().withCharacter(0x255A.toChar())
-    wallTiles[WallDirection.EAST_SOUTH] = Tile.defaultTile().withCharacter(0x2554.toChar())
-    wallTiles[WallDirection.SOUTH_WEST] = Tile.defaultTile().withCharacter(0x2557.toChar())
-    wallTiles[WallDirection.WEST_NORTH] = Tile.defaultTile().withCharacter(0x255D.toChar())
-    wallTiles[WallDirection.NORTH_EAST_SOUTH] = Tile.defaultTile().withCharacter(0x2560.toChar())
-    wallTiles[WallDirection.EAST_SOUTH_WEST] = Tile.defaultTile().withCharacter(0x2566.toChar())
-    wallTiles[WallDirection.SOUTH_WEST_NORTH] = Tile.defaultTile().withCharacter(0x2563.toChar())
-    wallTiles[WallDirection.WEST_NORTH_EAST] = Tile.defaultTile().withCharacter(0x2569.toChar())
-    wallTiles[WallDirection.ALL] = Tile.defaultTile().withCharacter(0x256C.toChar())
 
-    val tileGrid = SwingApplications.startTileGrid(
+    tileGrid = SwingApplications.startTileGrid(
         AppConfig.newBuilder()
-            .withSize(Level.WIDTH, Level.HEIGHT)
+            .withSize(SCREEN_WIDTH, SCREEN_HEIGHT)
             .withDefaultTileset(CP437TilesetResources.rexPaint16x16())
             .withDebugConfig(debugConfig)
-            .withDebugMode(zirconDebug)
+            .withDebugMode(zirconDebugMode)
             .build())
-    val screen = Screen.create(tileGrid)
+    screen = Screen.create(tileGrid)
     screen.onShutdown { lock.withLock { condition.signal() } }
     screen.theme = ColorThemes.adriftInDreams()
 
     screen.display()
 
-    level.forEach { square ->
-      val tile = when (square.type)
-      {
-        SquareType.BLOCKED -> blockedTile
-        SquareType.CORRIDOR -> corridorTile
-        SquareType.FLOOR -> floorTile
-        SquareType.WALL -> wallTiles.getValue(square.wallDirection)
-        SquareType.DOOR -> doorTile
-      }
-      tileGrid.draw(tile, Position.create(square.x, square.y))
+    val mapLayer = LayerBuilder.newBuilder()
+        .withOffset(MAP_OFFSET_X, MAP_OFFSET_Y)
+        .withSize(Level.WIDTH, Level.HEIGHT)
+        .build()
+
+    tileGrid.addLayer(mapLayer)
+
+    mapComponent = MapComponent(this, mapLayer)
+
+    screen.handleMouseEvents(MouseEventType.MOUSE_CLICKED) { mouseEvent: MouseEvent, uiEventPhase: UIEventPhase ->
+      mapComponent.newLevel()
+      UIEventResponse.processed()
     }
+  }
+
+  private fun drawLevel()
+  {
   }
 }
