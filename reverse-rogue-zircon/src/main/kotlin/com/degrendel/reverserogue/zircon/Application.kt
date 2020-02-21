@@ -27,10 +27,10 @@ class Application(private val lock: ReentrantLock, private val condition: Condit
   val world: World = RogueWorld()
 
   private val floorTile = Tile.defaultTile().withCharacter('.')
-  private val wallTile = Tile.defaultTile().withCharacter('8')
   private val blockedTile = Tile.defaultTile().withCharacter(' ')
-  private val cooridorTile = Tile.defaultTile().withCharacter('#')
+  private val corridorTile = Tile.defaultTile().withCharacter('#')
   private val doorTile = Tile.defaultTile().withCharacter('+')
+  private val rogueTile = Tile.defaultTile().withCharacter(0x263A.toChar())
 
   private val wallTiles = EnumMap<WallDirection, Tile>(WallDirection::class.java)
 
@@ -72,7 +72,7 @@ class Application(private val lock: ReentrantLock, private val condition: Condit
       val tile = when (square.type)
       {
         SquareType.BLOCKED -> blockedTile
-        SquareType.CORRIDOR -> cooridorTile
+        SquareType.CORRIDOR -> corridorTile
         SquareType.FLOOR -> floorTile
         SquareType.WALL -> wallTiles.getValue(square.wallDirection)
         SquareType.DOOR -> doorTile
