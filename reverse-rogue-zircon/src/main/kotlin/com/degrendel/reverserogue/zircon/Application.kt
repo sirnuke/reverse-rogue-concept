@@ -9,15 +9,13 @@ import org.hexworks.zircon.api.SwingApplications
 import org.hexworks.zircon.api.application.AppConfig
 import org.hexworks.zircon.api.application.DebugConfig
 import org.hexworks.zircon.api.builder.graphics.LayerBuilder
-import org.hexworks.zircon.api.data.Position
-import org.hexworks.zircon.api.data.Tile
+import org.hexworks.zircon.api.graphics.Layer
 import org.hexworks.zircon.api.grid.TileGrid
 import org.hexworks.zircon.api.screen.Screen
 import org.hexworks.zircon.api.uievent.MouseEvent
 import org.hexworks.zircon.api.uievent.MouseEventType
 import org.hexworks.zircon.api.uievent.UIEventPhase
 import org.hexworks.zircon.api.uievent.UIEventResponse
-import java.util.*
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -43,7 +41,9 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
   private val tileGrid: TileGrid
   private val screen: Screen
 
-  private val mapComponent: MapComponent
+  private val levelLayer: Layer
+
+  private lateinit var levelComponent: LevelComponent
 
   init
   {
@@ -72,17 +72,15 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
 
     screen.display()
 
-    val mapLayer = LayerBuilder.newBuilder()
+    levelLayer = LayerBuilder.newBuilder()
         .withOffset(MAP_OFFSET_X, MAP_OFFSET_Y)
         .withSize(Level.WIDTH, Level.HEIGHT)
         .build()
 
-    tileGrid.addLayer(mapLayer)
+    tileGrid.addLayer(levelLayer)
 
-    mapComponent = MapComponent(this, mapLayer)
-
-    screen.handleMouseEvents(MouseEventType.MOUSE_CLICKED) { mouseEvent: MouseEvent, uiEventPhase: UIEventPhase ->
-      mapComponent.newLevel()
+    screen.handleMouseEvents(MouseEventType.MOUSE_CLICKED) { _: MouseEvent, _: UIEventPhase ->
+      levelComponent = LevelComponent(this, levelLayer, world.generateLevel())
       UIEventResponse.processed()
     }
   }
