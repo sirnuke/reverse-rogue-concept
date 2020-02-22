@@ -91,8 +91,4 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
 
     }
   }
-
-  private fun drawLevel()
-  {
-  }
 }
