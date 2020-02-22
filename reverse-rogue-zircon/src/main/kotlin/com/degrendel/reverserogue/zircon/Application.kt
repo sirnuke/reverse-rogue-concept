@@ -7,18 +7,17 @@ import org.hexworks.zircon.api.CP437TilesetResources
 import org.hexworks.zircon.api.ColorThemes
 import org.hexworks.zircon.api.SwingApplications
 import org.hexworks.zircon.api.application.AppConfig
+import org.hexworks.zircon.api.application.Application
 import org.hexworks.zircon.api.application.DebugConfig
 import org.hexworks.zircon.api.builder.graphics.LayerBuilder
 import org.hexworks.zircon.api.graphics.Layer
 import org.hexworks.zircon.api.grid.TileGrid
 import org.hexworks.zircon.api.screen.Screen
-import org.hexworks.zircon.api.uievent.MouseEvent
-import org.hexworks.zircon.api.uievent.MouseEventType
-import org.hexworks.zircon.api.uievent.UIEventPhase
-import org.hexworks.zircon.api.uievent.UIEventResponse
+import org.hexworks.zircon.api.uievent.*
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import kotlin.system.exitProcess
 
 class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boolean = false, zirconDebugMode: Boolean = false, drawGrid: Boolean = false)
 {
@@ -36,7 +35,6 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
 
   val agent: SoarAgent = RogueSoarAgent()
   val world: World = RogueWorld()
-
 
   private val tileGrid: TileGrid
   private val screen: Screen
@@ -57,7 +55,6 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
       DebugConfig(displayGrid = true, displayCoordinates = true, displayFps = true)
     else
       DebugConfig(displayGrid = false, displayCoordinates = false, displayFps = true)
-
 
     tileGrid = SwingApplications.startTileGrid(
         AppConfig.newBuilder()
@@ -82,6 +79,16 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
     screen.handleMouseEvents(MouseEventType.MOUSE_CLICKED) { _: MouseEvent, _: UIEventPhase ->
       levelComponent = LevelComponent(this, levelLayer, world.generateLevel())
       UIEventResponse.processed()
+    }
+
+    if (zirconDebugMode)
+    {
+      screen.handleKeyboardEvents(KeyboardEventType.KEY_PRESSED) { event: KeyboardEvent, _: UIEventPhase ->
+        if (event.code == KeyCode.ESCAPE)
+          exitProcess(0)
+        UIEventResponse.pass()
+      }
+
     }
   }
 
