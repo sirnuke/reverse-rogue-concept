@@ -54,10 +54,5 @@ class LevelComponent(private val app: Application, private val layer: Layer, pri
       }
       layer.draw(tile, Position.create(square.position.x, square.position.y))
     }
-
-    level.forEachEntity { entity ->
-      TODO("Stub!")
-    }
   }
-
 }

@@ -13,12 +13,6 @@ interface Level
   fun inBounds(position: Position): Boolean
 
   fun forEachSquare(lambda: (square: Square) -> Unit)
-
-  fun forEachEntity(lambda: (entity: Entity) -> Unit)
-
-  fun spawnEntity(position: Position, entity: Entity)
-
-  fun moveEntity(from: Position, to: Position, entity: Entity)
 }
 
 data class Position(val x: Int, val y: Int)
@@ -32,7 +26,6 @@ interface Square
   val type: SquareType
   val wallDirection: WallDirection
   val blocked: Boolean
-  val entity: Entity?
 }
 
 

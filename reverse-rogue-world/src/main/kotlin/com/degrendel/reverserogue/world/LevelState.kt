@@ -18,8 +18,6 @@ class LevelState : Level
 
   private val map = mutableListOf<MutableList<SquareImplementation>>()
 
-  private val entities = mutableListOf<Entity>()
-
   init
   {
     for (x in 0 until Level.WIDTH)
@@ -110,28 +108,12 @@ class LevelState : Level
       row.forEach { square -> lambda(square) }
     }
   }
-
-  override fun forEachEntity(lambda: (entity: Entity) -> Unit) = entities.forEach(lambda)
-
-  override fun spawnEntity(position: Position, entity: Entity)
-  {
-    TODO("not implemented")
-  }
-
-  override fun moveEntity(from: Position, to: Position, entity: Entity)
-  {
-    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-  }
 }
 
 data class SquareImplementation(override val position: Position, override val type: SquareType, val wallDirections: Set<Cardinal> = setOf()) : Square
 {
   override val blocked: Boolean = (type == SquareType.BLOCKED || type == SquareType.WALL)
   override val wallDirection: WallDirection = wallDirectionConversion.getValue(wallDirections)
-
-  var currentEntity: Entity? = null
-
-  override val entity = currentEntity
 
   companion object
   {
