@@ -28,7 +28,6 @@ interface Square
   val blocked: Boolean
 }
 
-
 enum class SquareType
 {
   BLOCKED, CORRIDOR, WALL, FLOOR, DOOR
