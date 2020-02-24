@@ -1,9 +1,7 @@
 package com.degrendel.reverserogue.common.components
 
 import com.badlogic.ashley.core.Component
-import com.degrendel.reverserogue.common.Position
-import com.degrendel.reverserogue.common.SquareType
-import com.degrendel.reverserogue.common.WallOrientation
+import com.degrendel.reverserogue.common.*
 
 /** Indicates that this entity is currently visible to the Rogue. */
 class VisibleComponent : Component
@@ -22,3 +20,10 @@ data class WallOrientationComponent(val wallOrientation: WallOrientation) : Comp
 
 /** Tracks the id and dimensions of the room. */
 data class RoomComponent(val id: Int, val width: Int, val height: Int) : Component
+
+/** Indicates this entity is a creature. */
+data class CreatureTypeComponent(val type: CreatureType) : Component
+
+/** Indicates what team this creature belongs to. */
+data class AllegianceComponent(val allegiance: Allegiance) : Component
+
