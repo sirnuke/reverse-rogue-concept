@@ -78,16 +78,17 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
 
     tileGrid.addLayer(levelLayer)
 
+    val view = InGameView(this, tileGrid)
 
     if (zirconDebugMode)
     {
-      screen.handleKeyboardEvents(KeyboardEventType.KEY_PRESSED) { event: KeyboardEvent, _: UIEventPhase ->
+      view.screen.handleKeyboardEvents(KeyboardEventType.KEY_PRESSED) { event: KeyboardEvent, _: UIEventPhase ->
         if (event.code == KeyCode.ESCAPE)
           exitProcess(0)
         UIEventResponse.pass()
       }
     }
 
-    screen.dock(InGameView(this, tileGrid))
+    screen.dock(view)
   }
 }
