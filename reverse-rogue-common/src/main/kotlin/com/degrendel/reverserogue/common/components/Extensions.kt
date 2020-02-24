@@ -5,7 +5,7 @@ import com.degrendel.reverserogue.common.Position
 
 // Mapper helper functions
 fun Entity.getPosition() = ComponentMaps.position.get(this).position
-fun Entity.getSquareType() = ComponentMaps.squareType.get(this).type
+fun Entity.getSquare(): SquareTypeComponent = ComponentMaps.squareType.get(this)
 fun Entity.getWallOrientation() = ComponentMaps.wallOrientation.get(this).wallOrientation
 fun Entity.getRoomData() = ComponentMaps.roomData.get(this)!!
 fun Entity.getCreatureType() = ComponentMaps.creatureType.get(this).type
