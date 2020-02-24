@@ -186,7 +186,22 @@ class LevelState(private val world: RogueWorld) : Level
     entity.add(PositionComponent(position))
   }
 
+  /**
+   * Returns a list of randomly selected rooms, with no duplicates.
+   *
+   * Will probably blow up in your face if greater than the actual number of rooms, FYI.
+   */
   fun getRandomRooms(count: Int): List<Entity> = rooms.shuffled().dropLast(rooms.size - count)
+
+  /**
+   * Returns a random location inside the given room.
+   */
+  fun getRandomPointInRoom(room: Entity): Position
+  {
+    // TODO: Needs to track treasure versus traps versus stairs versus creatures versus etc
+    val data = room.getRoomData()
+    return room.getPosition().random(data.width, data.height)
+  }
 
   override fun getCreature(position: Position) = map[position.x][position.y].creature
 

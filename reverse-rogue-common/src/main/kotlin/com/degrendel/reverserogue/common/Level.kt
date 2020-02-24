@@ -1,6 +1,7 @@
 package com.degrendel.reverserogue.common
 
 import com.badlogic.ashley.core.Entity
+import kotlin.random.Random
 
 interface Level
 {
@@ -30,6 +31,8 @@ data class Position(val x: Int, val y: Int)
   fun move(direction: EightWay) = Position(x + direction.x, y + direction.y)
 
   fun move(direction: Cardinal) = Position(x + direction.x, y + direction.y)
+
+  fun random(width: Int, height: Int) = Position(x + Random.nextInt(width), y + Random.nextInt(height))
 }
 
 enum class SquareType(val blocked: Boolean)
