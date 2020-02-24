@@ -66,6 +66,7 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
     }
 
     world.generateLevel()
+    world.spawn()
 
     tileGrid.dock(view)
   }

@@ -2,13 +2,11 @@ package com.degrendel.reverserogue.world
 
 import com.badlogic.ashley.core.Engine
 import com.badlogic.ashley.core.Entity
-import com.degrendel.reverserogue.common.Allegiance
-import com.degrendel.reverserogue.common.CreatureType
-import com.degrendel.reverserogue.common.World
+import com.degrendel.reverserogue.common.*
 import com.degrendel.reverserogue.common.components.AllegianceComponent
 import com.degrendel.reverserogue.common.components.CreatureTypeComponent
 import com.degrendel.reverserogue.common.components.PositionComponent
-import com.degrendel.reverserogue.common.logger
+import com.degrendel.reverserogue.common.components.getPosition
 
 class RogueWorld : World
 {
@@ -22,12 +20,14 @@ class RogueWorld : World
 
   override val ecs = Engine()
 
-  override val conjurer: Entity = ecs.createEntity()
+  override val conjurer: Entity = Entity()
       .add(CreatureTypeComponent(CreatureType.CONJURER))
       .add(AllegianceComponent(Allegiance.CONJURER))
+      .let { ecs.addEntity(it); it }
   override val rogue: Entity = ecs.createEntity()
       .add(CreatureTypeComponent(CreatureType.ROGUE))
       .add(AllegianceComponent(Allegiance.ROGUE))
+      .let { ecs.addEntity(it); it }
 
   override fun generateLevel(): LevelState
   {
@@ -44,5 +44,21 @@ class RogueWorld : World
   override fun update()
   {
     ecs.update(0.0f)
+  }
+
+  override fun spawn()
+  {
+    conjurer.add(PositionComponent(Position(0, 0)))
+    rogue.add(PositionComponent(Position(2, 2)))
+  }
+
+  override fun move(entity: Entity, direction: EightWay)
+  {
+    val position = entity.getPosition()
+    // NOTE: explicitly removing position triggers an update on listeners
+    entity.remove(PositionComponent::class.java)
+    entity.add(PositionComponent(position.move(direction)))
+
+    update()
   }
 }

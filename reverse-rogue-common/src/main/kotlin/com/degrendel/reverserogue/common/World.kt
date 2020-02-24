@@ -14,6 +14,9 @@ interface World
   fun generateLevel(): Level
 
   fun update()
+
+  fun spawn()
+  fun move(entity: Entity, direction: EightWay)
 }
 
 

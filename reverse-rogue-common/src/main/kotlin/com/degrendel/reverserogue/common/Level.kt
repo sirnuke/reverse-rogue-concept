@@ -22,6 +22,8 @@ interface Level
 data class Position(val x: Int, val y: Int)
 {
   fun add(position: Position) = Position(x + position.x, y + position.y)
+
+  fun move(direction: EightWay) = Position(x + direction.x, y + direction.y)
 }
 
 enum class SquareType(val blocked: Boolean)
