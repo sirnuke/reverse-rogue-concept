@@ -47,6 +47,7 @@ class LevelState(private val world: RogueWorld) : Level
     dungeonGenerator.generate(grid)
 
     grid.forEach { _, x, y, value ->
+      val position = Position(x, y)
       val type = when (value)
       {
         1.0f -> SquareType.BLOCKED
@@ -54,7 +55,10 @@ class LevelState(private val world: RogueWorld) : Level
         0.0f -> SquareType.CORRIDOR
         else -> throw IllegalStateException("Unexpected value $value")
       }
-      map[x][y].square.add(SquareTypeComponent(type))
+      val roomId = if (type == SquareType.FLOOR)
+        rooms.firstOrNull { it.isWithinRoom(position) }?.getRoomData()?.id
+      else null
+      map[x][y].square.add(SquareTypeComponent(type, roomId))
       false
     }
 
@@ -64,9 +68,9 @@ class LevelState(private val world: RogueWorld) : Level
       if (map[x][y].square.getSquareType().blocked)
       {
         walls += map[x][y].square
-        map[x][y].square.add(SquareTypeComponent(SquareType.WALL))
+        map[x][y].square.add(SquareTypeComponent(SquareType.WALL, null))
       }
-      else map[x][y].square.add(SquareTypeComponent(SquareType.DOOR))
+      else map[x][y].square.add(SquareTypeComponent(SquareType.DOOR, null))
     }
 
     rooms.forEach { room ->
@@ -180,8 +184,7 @@ class LevelState(private val world: RogueWorld) : Level
     return (!square.square.getSquareType().blocked && square.creature == null)
   }
 
-  override fun inBounds(position: Position)
-      = (position.x >= 0 && position.y >= 0 && position.x < Level.WIDTH && position.y < Level.HEIGHT)
+  override fun inBounds(position: Position) = (position.x >= 0 && position.y >= 0 && position.x < Level.WIDTH && position.y < Level.HEIGHT)
 }
 
 data class SquareInfo(val square: Entity, var creature: Entity?)

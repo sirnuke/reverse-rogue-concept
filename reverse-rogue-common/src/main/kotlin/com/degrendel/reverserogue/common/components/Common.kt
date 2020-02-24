@@ -1,6 +1,7 @@
 package com.degrendel.reverserogue.common.components
 
 import com.badlogic.ashley.core.Component
+import com.badlogic.ashley.core.Entity
 import com.degrendel.reverserogue.common.*
 
 /** Indicates that this entity is currently visible to the Rogue. */
@@ -13,7 +14,7 @@ class KnownComponent : Component
 data class PositionComponent(val position: Position) : Component
 
 /** Indicates this entity is a square in the level. */
-data class SquareTypeComponent(val type: SquareType) : Component
+data class SquareTypeComponent(val type: SquareType, val roomId: Int?) : Component
 
 /** Records the orientation of this wall square. */
 data class WallOrientationComponent(val wallOrientation: WallOrientation) : Component

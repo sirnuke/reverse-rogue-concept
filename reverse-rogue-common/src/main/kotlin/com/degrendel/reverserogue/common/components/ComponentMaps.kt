@@ -1,7 +1,6 @@
 package com.degrendel.reverserogue.common.components
 
 import com.badlogic.ashley.core.ComponentMapper
-import com.badlogic.ashley.core.Entity
 
 object ComponentMaps
 {
@@ -13,9 +12,3 @@ object ComponentMaps
   val allegiance : ComponentMapper<AllegianceComponent> = ComponentMapper.getFor(AllegianceComponent::class.java)
 }
 
-fun Entity.getPosition() = ComponentMaps.position.get(this).position
-fun Entity.getSquareType() = ComponentMaps.squareType.get(this).type
-fun Entity.getWallOrientation() = ComponentMaps.wallOrientation.get(this).wallOrientation
-fun Entity.getRoomData() = ComponentMaps.roomData.get(this)!!
-fun Entity.getCreatureType() = ComponentMaps.creatureType.get(this).type
-fun Entity.getAllegiance() = ComponentMaps.allegiance.get(this).allegiance
