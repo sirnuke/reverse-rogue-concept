@@ -58,19 +58,29 @@ class LevelState(private val world: RogueWorld) : Level
       val roomId = if (type == SquareType.FLOOR)
         rooms.firstOrNull { it.isWithinRoom(position) }?.getRoomData()?.id
       else null
-      map[x][y].square.add(SquareTypeComponent(type, roomId))
+      val visibleRooms = if (roomId == null) setOf() else setOf(roomId)
+      map[x][y].square.add(SquareTypeComponent(type, roomId, visibleRooms))
       false
     }
 
     val walls = mutableListOf<Entity>()
 
-    val wallify = { x: Int, y: Int ->
-      if (map[x][y].square.getSquareType().blocked)
+    val wallify = { position: Position ->
+      if (map[position.x][position.y].square.getSquare().type.blocked)
       {
-        walls += map[x][y].square
-        map[x][y].square.add(SquareTypeComponent(SquareType.WALL, null))
+        walls += map[position.x][position.y].square
+        map[position.x][position.y].square.add(SquareTypeComponent(SquareType.WALL, null, setOf()))
       }
-      else map[x][y].square.add(SquareTypeComponent(SquareType.DOOR, null))
+      else
+      {
+        val visibleRooms = mutableSetOf<Int>()
+        Cardinal.values().forEach {
+          val neighbor = position.move(it)
+          if (inBounds(neighbor))
+            map[neighbor.x][neighbor.y].square.getSquare().roomId?.let { id -> visibleRooms.add(id) }
+        }
+        map[position.x][position.y].square.add(SquareTypeComponent(SquareType.DOOR, null, visibleRooms))
+      }
     }
 
     rooms.forEach { room ->
@@ -78,15 +88,16 @@ class LevelState(private val world: RogueWorld) : Level
       val width: Int
       val height: Int
       room.getRoomData().let { width = it.width; height = it.height }
+      // TODO: Gross
       for (x in (position.x - 1)..(position.x + width))
       {
-        wallify(x, position.y - 1)
-        wallify(x, position.y + height)
+        wallify(Position(x, position.y - 1))
+        wallify(Position(x, position.y + height))
       }
       for (y in (position.y - 1)..(position.y + height))
       {
-        wallify(position.x - 1, y)
-        wallify(position.x + width, y)
+        wallify(Position(position.x - 1, y))
+        wallify(Position(position.x + width, y))
       }
     }
 
@@ -94,10 +105,10 @@ class LevelState(private val world: RogueWorld) : Level
       val neighbors = mutableSetOf<Cardinal>()
       val position = wall.getPosition()
       Cardinal.values().forEach {
-        val check = Position(position.x + it.x, position.y + it.y)
+        val check = position.move(it)
         if (inBounds(check))
         {
-          val neighbor = map[check.x][check.y].square.getSquareType()
+          val neighbor = map[check.x][check.y].square.getSquare().type
           if (neighbor == SquareType.WALL || neighbor == SquareType.DOOR)
             neighbors.add(it)
         }
@@ -181,7 +192,7 @@ class LevelState(private val world: RogueWorld) : Level
   {
     if (!inBounds(position)) return false
     val square = map[position.x][position.y]
-    return (!square.square.getSquareType().blocked && square.creature == null)
+    return (!square.square.getSquare().type.blocked && square.creature == null)
   }
 
   override fun inBounds(position: Position) = (position.x >= 0 && position.y >= 0 && position.x < Level.WIDTH && position.y < Level.HEIGHT)

@@ -49,7 +49,7 @@ class InGameView(private val application: Application) : BaseView(application.ti
       override fun entityAdded(entity: Entity)
       {
         L.debug("New square! {}", entity)
-        val tile = when (entity.getSquareType())
+        val tile = when (entity.getSquare().type)
         {
           SquareType.BLOCKED -> TileBlock.blockedTile
           SquareType.CORRIDOR -> TileBlock.corridorTile
