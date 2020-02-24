@@ -17,6 +17,8 @@ interface World
 
   fun spawn()
   fun move(entity: Entity, direction: EightWay)
+
+  fun updateCreature(creature: Entity)
 }
 
 

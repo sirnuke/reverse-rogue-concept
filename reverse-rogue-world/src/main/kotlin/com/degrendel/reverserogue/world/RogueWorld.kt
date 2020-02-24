@@ -74,6 +74,11 @@ class RogueWorld : World
     update()
   }
 
+  override fun updateCreature(creature: Entity)
+  {
+    TODO("not implemented")
+  }
+
   private fun getNextCreatureId(): Int
   {
     val id = nextCreatureId
