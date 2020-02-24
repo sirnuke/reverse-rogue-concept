@@ -8,9 +8,6 @@ import com.github.czyzby.noise4j.map.generator.room.AbstractRoomGenerator.Room
 import com.github.czyzby.noise4j.map.generator.room.RoomType
 import com.github.czyzby.noise4j.map.generator.room.dungeon.DungeonGenerator
 
-// TODO: almost certainly going to have to store this longer term, if only for the agent
-data class RoomDetails(val x: Int, val y: Int, val width: Int, val height: Int)
-
 class LevelState(private val world: RogueWorld) : Level
 {
   companion object
@@ -20,6 +17,7 @@ class LevelState(private val world: RogueWorld) : Level
 
   // TODO: Doesn't need to be mutable
   private val map = mutableListOf<MutableList<Entity>>()
+  private val rooms = mutableListOf<Entity>()
 
   init
   {
@@ -30,14 +28,13 @@ class LevelState(private val world: RogueWorld) : Level
         row += Entity().add(PositionComponent(Position(x, y)))
       map += row
     }
-    val rooms = mutableListOf<Room>()
     val dungeonGenerator = DungeonGenerator()
     dungeonGenerator.addRoomType(object : RoomType
     {
       override fun carve(room: Room, grid: Grid, value: Float)
       {
-        L.info("Carving room {}x{}", room.width, room.height)
-        rooms += room
+        L.debug("Carving room ({},{})->({}x{})", room.x, room.y, room.width, room.height)
+        rooms += Entity().add(PositionComponent(Position(room.x, room.y))).add(RoomComponent(rooms.size, room.width, room.height))
         room.fill(grid, value)
       }
 
@@ -72,16 +69,19 @@ class LevelState(private val world: RogueWorld) : Level
     }
 
     rooms.forEach { room ->
-      L.info("({},{}) size ({}x{})", room.x, room.y, room.width, room.height)
-      for (x in (room.x - 1)..(room.x + room.width))
+      val position = room.getPosition()
+      val width: Int
+      val height: Int
+      room.getRoomData().let { width = it.width; height = it.height }
+      for (x in (position.x - 1)..(position.x + width))
       {
-        wallify(x, room.y - 1)
-        wallify(x, room.y + room.height)
+        wallify(x, position.y - 1)
+        wallify(x, position.y + height)
       }
-      for (y in (room.y - 1)..(room.y + room.height))
+      for (y in (position.y - 1)..(position.y + height))
       {
-        wallify(room.x - 1, y)
-        wallify(room.x + room.width, y)
+        wallify(position.x - 1, y)
+        wallify(position.x + width, y)
       }
     }
 
@@ -101,10 +101,12 @@ class LevelState(private val world: RogueWorld) : Level
     }
 
     map.forEach { row -> row.forEach { world.ecs.addEntity(it) } }
+    rooms.forEach { world.ecs.addEntity(it) }
   }
 
   fun removeFromECS()
   {
+    rooms.forEach { world.ecs.removeEntity(it) }
     map.forEach { row -> row.forEach { world.ecs.removeEntity(it) } }
   }
 
