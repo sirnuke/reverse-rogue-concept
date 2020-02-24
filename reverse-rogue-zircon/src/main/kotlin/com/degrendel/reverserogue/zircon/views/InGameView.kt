@@ -167,10 +167,6 @@ class InGameView(private val application: Application) : BaseView(application.ti
   override fun onDock()
   {
     L.info("Docking InGameView")
-    screen.handleKeyboardEvents(KeyboardEventType.KEY_PRESSED) { event: KeyboardEvent, _: UIEventPhase ->
-      // TODO: Handle text input
-      Pass
-    }
 
     val levelComponent = GameComponents.newGameComponentBuilder<Tile, TileBlock>()
         .withGameArea(gameArea)
