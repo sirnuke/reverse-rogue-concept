@@ -10,6 +10,7 @@ fun Entity.getWallOrientation() = ComponentMaps.wallOrientation.get(this).wallOr
 fun Entity.getRoomData() = ComponentMaps.roomData.get(this)!!
 fun Entity.getCreatureType() = ComponentMaps.creatureType.get(this).type
 fun Entity.getAllegiance() = ComponentMaps.allegiance.get(this).allegiance
+fun Entity.getCooldown() = ComponentMaps.cooldown.get(this).duration
 
 fun Entity.isWithinRoom(position: Position): Boolean
 {

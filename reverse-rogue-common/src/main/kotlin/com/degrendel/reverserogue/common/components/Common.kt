@@ -27,3 +27,6 @@ data class CreatureTypeComponent(val type: CreatureType) : Component
 /** Indicates what team this creature belongs to. */
 data class AllegianceComponent(val allegiance: Allegiance) : Component
 
+/** Tracks how long until this creature can act again. */
+data class CooldownComponent(val duration: Long) : Component
+
