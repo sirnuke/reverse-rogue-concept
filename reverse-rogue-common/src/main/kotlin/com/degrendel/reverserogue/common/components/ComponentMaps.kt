@@ -11,4 +11,3 @@ object ComponentMaps
   val creatureType: ComponentMapper<CreatureTypeComponent> = ComponentMapper.getFor(CreatureTypeComponent::class.java)
   val allegiance : ComponentMapper<AllegianceComponent> = ComponentMapper.getFor(AllegianceComponent::class.java)
 }
-
