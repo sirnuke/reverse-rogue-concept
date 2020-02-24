@@ -11,7 +11,21 @@ class RogueWorld : World
     private val L by logger()
   }
 
+  private var currentLevel: LevelState? = null
+
   override val ecs = Engine()
 
-  override fun generateLevel() = LevelState()
+  override fun generateLevel(): LevelState
+  {
+    currentLevel?.removeFromECS()
+    LevelState(this).let {
+      currentLevel = it
+      return it
+    }
+  }
+
+  override fun update()
+  {
+    ecs.update(0.0f)
+  }
 }

@@ -1,6 +1,8 @@
 package com.degrendel.reverserogue.world
 
+import com.badlogic.ashley.core.Entity
 import com.degrendel.reverserogue.common.*
+import com.degrendel.reverserogue.common.components.*
 import com.github.czyzby.noise4j.map.Grid
 import com.github.czyzby.noise4j.map.generator.room.AbstractRoomGenerator.Room
 import com.github.czyzby.noise4j.map.generator.room.RoomType
@@ -9,22 +11,23 @@ import com.github.czyzby.noise4j.map.generator.room.dungeon.DungeonGenerator
 // TODO: almost certainly going to have to store this longer term, if only for the agent
 data class RoomDetails(val x: Int, val y: Int, val width: Int, val height: Int)
 
-class LevelState : Level
+class LevelState(private val world: RogueWorld) : Level
 {
   companion object
   {
     private val L by logger()
   }
 
-  private val map = mutableListOf<MutableList<SquareImplementation>>()
+  // TODO: Doesn't need to be mutable
+  private val map = mutableListOf<MutableList<Entity>>()
 
   init
   {
     for (x in 0 until Level.WIDTH)
     {
-      val row = mutableListOf<SquareImplementation>()
+      val row = mutableListOf<Entity>()
       for (y in 0 until Level.HEIGHT)
-        row += SquareImplementation(Position(x, y), SquareType.BLOCKED)
+        row += Entity().add(PositionComponent(Position(x, y)))
       map += row
     }
     val rooms = mutableListOf<Room>()
@@ -53,19 +56,19 @@ class LevelState : Level
         0.0f -> SquareType.CORRIDOR
         else -> throw IllegalStateException("Unexpected value $value")
       }
-      map[x][y] = SquareImplementation(Position(x, y), type)
+      map[x][y].add(SquareTypeComponent(type))
       false
     }
 
-    val walls = mutableListOf<Pair<Int, Int>>()
+    val walls = mutableListOf<Entity>()
 
     val wallify = { x: Int, y: Int ->
-      map[x][y] = if (map[x][y].blocked)
+      if (map[x][y].getSquareType().blocked)
       {
-        walls += Pair(x, y)
-        SquareImplementation(Position(x, y), SquareType.WALL)
+        walls += map[x][y]
+        map[x][y].add(SquareTypeComponent(SquareType.WALL))
       }
-      else SquareImplementation(Position(x, y), SquareType.DOOR)
+      else map[x][y].add(SquareTypeComponent(SquareType.DOOR))
     }
 
     rooms.forEach { room ->
@@ -82,65 +85,31 @@ class LevelState : Level
       }
     }
 
-    walls.forEach { (x, y) ->
+    walls.forEach { wall ->
+      val neighbors = mutableSetOf<Cardinal>()
+      val position = wall.getPosition()
       Cardinal.values().forEach {
-        val check = Position(x + it.x, y + it.y)
+        val check = Position(position.x + it.x, position.y + it.y)
         if (inBounds(check))
         {
-          val neighbor = map[check.x][check.y]
-          if (neighbor.type == SquareType.WALL || neighbor.type == SquareType.DOOR)
-            map[x][y] = map[x][y].addWallDirection(it)
+          val neighbor = map[check.x][check.y].getSquareType()
+          if (neighbor == SquareType.WALL || neighbor == SquareType.DOOR)
+            neighbors.add(it)
         }
       }
+      wall.add(WallOrientationComponent(WallOrientation.lookup.getValue(neighbors)))
     }
+
+    map.forEach { row -> row.forEach { world.ecs.addEntity(it) } }
   }
+
+  fun removeFromECS()
+  {
+    map.forEach { row -> row.forEach { world.ecs.removeEntity(it) } }
+  }
+
+  override fun getSquare(position: Position) = map[position.x][position.y]
 
   override fun inBounds(position: Position) = (position.x >= 0 && position.y >= 0 && position.x < Level.WIDTH && position.y < Level.HEIGHT)
-
-  override fun getSquare(position: Position): Square
-  {
-    return map[position.x][position.y]
-  }
-
-  override fun forEachSquare(lambda: (square: Square) -> Unit)
-  {
-    map.forEach { row ->
-      row.forEach { square -> lambda(square) }
-    }
-  }
-}
-
-data class SquareImplementation(override val position: Position, override val type: SquareType, val wallDirections: Set<Cardinal> = setOf()) : Square
-{
-  override val blocked: Boolean = (type == SquareType.BLOCKED || type == SquareType.WALL)
-  override val wallDirection: WallDirection = wallDirectionConversion.getValue(wallDirections)
-
-  companion object
-  {
-    // Ick.  I'm guessing there's some math function to do this, but whatever
-    // Could do this a bit more efficiently with bitmasks, but this lookup should still be fairly quick, and only
-    // done once per level generation.  Compared to the memory hog that is Soar, probably not that expensive to just
-    // keep them in memory for when the rogue starts going back up the stairs.
-    val wallDirectionConversion = mapOf(
-        setOf<Cardinal>() to WallDirection.NONE,
-        setOf(Cardinal.NORTH) to WallDirection.NORTH_SOUTH,
-        setOf(Cardinal.SOUTH) to WallDirection.NORTH_SOUTH,
-        setOf(Cardinal.NORTH, Cardinal.SOUTH) to WallDirection.NORTH_SOUTH,
-        setOf(Cardinal.EAST) to WallDirection.EAST_WEST,
-        setOf(Cardinal.WEST) to WallDirection.EAST_WEST,
-        setOf(Cardinal.EAST, Cardinal.WEST) to WallDirection.EAST_WEST,
-        setOf(Cardinal.NORTH, Cardinal.EAST) to WallDirection.NORTH_EAST,
-        setOf(Cardinal.EAST, Cardinal.SOUTH) to WallDirection.EAST_SOUTH,
-        setOf(Cardinal.SOUTH, Cardinal.WEST) to WallDirection.SOUTH_WEST,
-        setOf(Cardinal.WEST, Cardinal.NORTH) to WallDirection.WEST_NORTH,
-        setOf(Cardinal.NORTH, Cardinal.EAST, Cardinal.SOUTH) to WallDirection.NORTH_EAST_SOUTH,
-        setOf(Cardinal.EAST, Cardinal.SOUTH, Cardinal.WEST) to WallDirection.EAST_SOUTH_WEST,
-        setOf(Cardinal.SOUTH, Cardinal.WEST, Cardinal.NORTH) to WallDirection.SOUTH_WEST_NORTH,
-        setOf(Cardinal.WEST, Cardinal.NORTH, Cardinal.EAST) to WallDirection.WEST_NORTH_EAST,
-        setOf(Cardinal.NORTH, Cardinal.EAST, Cardinal.SOUTH, Cardinal.WEST) to WallDirection.ALL
-    )
-  }
-
-  fun addWallDirection(dir: Cardinal) = SquareImplementation(position, type, wallDirections.plus(dir))
 }
 

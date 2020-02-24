@@ -3,17 +3,18 @@ package com.degrendel.reverserogue.zircon
 import com.degrendel.reverserogue.agent.RogueSoarAgent
 import com.degrendel.reverserogue.common.*
 import com.degrendel.reverserogue.world.RogueWorld
+import com.degrendel.reverserogue.zircon.views.InGameView
 import org.hexworks.zircon.api.CP437TilesetResources
 import org.hexworks.zircon.api.ColorThemes
 import org.hexworks.zircon.api.SwingApplications
 import org.hexworks.zircon.api.application.AppConfig
-import org.hexworks.zircon.api.application.Application
 import org.hexworks.zircon.api.application.DebugConfig
 import org.hexworks.zircon.api.builder.graphics.LayerBuilder
 import org.hexworks.zircon.api.graphics.Layer
 import org.hexworks.zircon.api.grid.TileGrid
 import org.hexworks.zircon.api.screen.Screen
 import org.hexworks.zircon.api.uievent.*
+import org.hexworks.zircon.internal.Zircon
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -41,10 +42,11 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
 
   private val levelLayer: Layer
 
-  private lateinit var levelComponent: LevelComponent
+  //private lateinit var levelView: LevelView
 
   init
   {
+    Zircon.eventBus
     assert(SCREEN_WIDTH >= Level.WIDTH)
     assert(SCREEN_HEIGHT >= Level.HEIGHT)
 
@@ -76,10 +78,6 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
 
     tileGrid.addLayer(levelLayer)
 
-    screen.handleMouseEvents(MouseEventType.MOUSE_CLICKED) { _: MouseEvent, _: UIEventPhase ->
-      levelComponent = LevelComponent(this, levelLayer, world.generateLevel())
-      UIEventResponse.processed()
-    }
 
     if (zirconDebugMode)
     {
@@ -88,7 +86,8 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
           exitProcess(0)
         UIEventResponse.pass()
       }
-
     }
+
+    screen.dock(InGameView(this, tileGrid))
   }
 }

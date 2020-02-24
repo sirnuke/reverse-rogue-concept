@@ -6,4 +6,6 @@ interface World
 {
   val ecs: Engine
   fun generateLevel(): Level
+
+  fun update()
 }
