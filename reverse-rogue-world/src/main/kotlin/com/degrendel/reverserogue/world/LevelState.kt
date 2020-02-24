@@ -16,16 +16,16 @@ class LevelState(private val world: RogueWorld) : Level
   }
 
   // TODO: Doesn't need to be mutable
-  private val map = mutableListOf<MutableList<Entity>>()
+  private val map = mutableListOf<MutableList<SquareInfo>>()
   private val rooms = mutableListOf<Entity>()
 
   init
   {
     for (x in 0 until Level.WIDTH)
     {
-      val row = mutableListOf<Entity>()
+      val row = mutableListOf<SquareInfo>()
       for (y in 0 until Level.HEIGHT)
-        row += Entity().add(PositionComponent(Position(x, y)))
+        row += SquareInfo(Entity().add(PositionComponent(Position(x, y))), creature = null)
       map += row
     }
     val dungeonGenerator = DungeonGenerator()
@@ -54,19 +54,19 @@ class LevelState(private val world: RogueWorld) : Level
         0.0f -> SquareType.CORRIDOR
         else -> throw IllegalStateException("Unexpected value $value")
       }
-      map[x][y].add(SquareTypeComponent(type))
+      map[x][y].square.add(SquareTypeComponent(type))
       false
     }
 
     val walls = mutableListOf<Entity>()
 
     val wallify = { x: Int, y: Int ->
-      if (map[x][y].getSquareType().blocked)
+      if (map[x][y].square.getSquareType().blocked)
       {
-        walls += map[x][y]
-        map[x][y].add(SquareTypeComponent(SquareType.WALL))
+        walls += map[x][y].square
+        map[x][y].square.add(SquareTypeComponent(SquareType.WALL))
       }
-      else map[x][y].add(SquareTypeComponent(SquareType.DOOR))
+      else map[x][y].square.add(SquareTypeComponent(SquareType.DOOR))
     }
 
     rooms.forEach { room ->
@@ -93,7 +93,7 @@ class LevelState(private val world: RogueWorld) : Level
         val check = Position(position.x + it.x, position.y + it.y)
         if (inBounds(check))
         {
-          val neighbor = map[check.x][check.y].getSquareType()
+          val neighbor = map[check.x][check.y].square.getSquareType()
           if (neighbor == SquareType.WALL || neighbor == SquareType.DOOR)
             neighbors.add(it)
         }
@@ -101,18 +101,60 @@ class LevelState(private val world: RogueWorld) : Level
       wall.add(WallOrientationComponent(WallOrientation.lookup.getValue(neighbors)))
     }
 
-    map.forEach { row -> row.forEach { world.ecs.addEntity(it) } }
+    map.forEach { row -> row.forEach { world.ecs.addEntity(it.square) } }
     rooms.forEach { world.ecs.addEntity(it) }
   }
 
   fun removeFromECS()
   {
     rooms.forEach { world.ecs.removeEntity(it) }
-    map.forEach { row -> row.forEach { world.ecs.removeEntity(it) } }
+    map.forEach { row ->
+      row.forEach {
+        world.ecs.removeEntity(it.square)
+        it.creature?.let { entity -> world.ecs.removeEntity(entity) }
+      }
+    }
   }
 
-  override fun getSquare(position: Position) = map[position.x][position.y]
+  override fun getSquare(position: Position) = map[position.x][position.y].square
+
+  fun spawnCreature(entity: Entity, position: Position)
+  {
+    assert(map[position.x][position.y].creature == null)
+    map[position.x][position.y].creature = entity
+    entity.add(PositionComponent(position))
+  }
+
+  fun despawnCreature(entity: Entity)
+  {
+    val position = entity.getPosition()
+    assert(map[position.x][position.y].creature == entity)
+    map[position.x][position.y].creature = null
+    entity.remove(PositionComponent::class.java)
+  }
+
+  fun moveCreature(entity: Entity, position: Position)
+  {
+    assert(canMoveTo(position))
+    val old = entity.getPosition()
+    map[old.x][old.y].creature = null
+    map[position.x][position.y].creature = entity
+    // NOTE: Explicitly remove position to trigger refreshes upstream in Families
+    entity.remove(PositionComponent::class.java)
+    entity.add(PositionComponent(position))
+  }
+
+  override fun getCreature(position: Position) = map[position.x][position.y].creature
+
+  override fun canMoveTo(position: Position): Boolean
+  {
+    if (!inBounds(position)) return false
+    val square = map[position.x][position.y]
+    return (!square.square.getSquareType().blocked && square.creature == null)
+  }
 
   override fun inBounds(position: Position) = (position.x >= 0 && position.y >= 0 && position.x < Level.WIDTH && position.y < Level.HEIGHT)
 }
+
+data class SquareInfo(val square: Entity, var creature: Entity?)
 

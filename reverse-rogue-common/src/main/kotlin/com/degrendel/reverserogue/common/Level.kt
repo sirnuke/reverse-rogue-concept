@@ -16,6 +16,10 @@ interface Level
 
   fun getSquare(position: Position): Entity
 
+  fun getCreature(position: Position): Entity?
+
+  fun canMoveTo(position: Position): Boolean
+
   fun inBounds(position: Position): Boolean
 }
 

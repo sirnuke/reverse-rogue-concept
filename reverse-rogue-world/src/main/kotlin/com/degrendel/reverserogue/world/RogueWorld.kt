@@ -31,9 +31,11 @@ class RogueWorld : World
 
   override fun generateLevel(): LevelState
   {
-    _currentLevel?.removeFromECS()
-    conjurer.remove(PositionComponent::class.java)
-    rogue.remove(PositionComponent::class.java)
+    _currentLevel?.let {
+      it.despawnCreature(conjurer)
+      it.despawnCreature(rogue)
+      it.removeFromECS()
+    }
 
     val nextLevel = LevelState(this)
     _currentLevel = nextLevel
@@ -48,16 +50,21 @@ class RogueWorld : World
 
   override fun spawn()
   {
-    conjurer.add(PositionComponent(Position(0, 0)))
-    rogue.add(PositionComponent(Position(2, 2)))
+    _currentLevel!!.let {
+      it.spawnCreature(conjurer, Position(2, 2))
+      it.spawnCreature(rogue, Position(4, 4))
+    }
   }
 
   override fun move(entity: Entity, direction: EightWay)
   {
-    val position = entity.getPosition()
-    // NOTE: explicitly removing position triggers an update on listeners
-    entity.remove(PositionComponent::class.java)
-    entity.add(PositionComponent(position.move(direction)))
+    val old = entity.getPosition()
+    val new = old.move(direction)
+
+    _currentLevel!!.let {
+      if (!it.canMoveTo(new)) return
+      it.moveCreature(entity, new)
+    }
 
     update()
   }
