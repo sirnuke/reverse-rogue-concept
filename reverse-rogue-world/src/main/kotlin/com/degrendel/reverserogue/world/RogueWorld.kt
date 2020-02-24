@@ -2,11 +2,9 @@ package com.degrendel.reverserogue.world
 
 import com.badlogic.ashley.core.Engine
 import com.badlogic.ashley.core.Entity
+import com.badlogic.ashley.core.Family
 import com.degrendel.reverserogue.common.*
-import com.degrendel.reverserogue.common.components.AllegianceComponent
-import com.degrendel.reverserogue.common.components.CreatureTypeComponent
-import com.degrendel.reverserogue.common.components.PositionComponent
-import com.degrendel.reverserogue.common.components.getPosition
+import com.degrendel.reverserogue.common.components.*
 
 class RogueWorld : World
 {
@@ -15,17 +13,22 @@ class RogueWorld : World
     private val L by logger()
   }
 
+  private val allSpawnedEntities = Family.all(CreatureTypeComponent::class.java, PositionComponent::class.java)
+
   private var _currentLevel: LevelState? = null
   override val currentLevel get() = _currentLevel
+
+  private var nextCreatureId = 1
+  private var clock = 0L
 
   override val ecs = Engine()
 
   override val conjurer: Entity = Entity()
-      .add(CreatureTypeComponent(CreatureType.CONJURER))
+      .add(CreatureTypeComponent(getNextCreatureId(), CreatureType.CONJURER, 0L))
       .add(AllegianceComponent(Allegiance.CONJURER))
       .let { ecs.addEntity(it); it }
   override val rogue: Entity = ecs.createEntity()
-      .add(CreatureTypeComponent(CreatureType.ROGUE))
+      .add(CreatureTypeComponent(getNextCreatureId(), CreatureType.ROGUE, 0L))
       .add(AllegianceComponent(Allegiance.ROGUE))
       .let { ecs.addEntity(it); it }
 
@@ -69,5 +72,12 @@ class RogueWorld : World
     }
 
     update()
+  }
+
+  private fun getNextCreatureId(): Int
+  {
+    val id = nextCreatureId
+    nextCreatureId++
+    return id
   }
 }

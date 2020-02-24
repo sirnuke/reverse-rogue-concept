@@ -10,5 +10,4 @@ object ComponentMaps
   val roomData: ComponentMapper<RoomComponent> = ComponentMapper.getFor(RoomComponent::class.java)
   val creatureType: ComponentMapper<CreatureTypeComponent> = ComponentMapper.getFor(CreatureTypeComponent::class.java)
   val allegiance: ComponentMapper<AllegianceComponent> = ComponentMapper.getFor(AllegianceComponent::class.java)
-  val cooldown: ComponentMapper<CooldownComponent> = ComponentMapper.getFor(CooldownComponent::class.java)
 }

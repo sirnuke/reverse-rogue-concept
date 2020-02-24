@@ -78,7 +78,7 @@ class InGameView(private val application: Application) : BaseView(application.ti
       {
         L.debug("Updating entity {}", entity)
         val position = entity.getPosition()
-        val tile = when (entity.getCreatureType())
+        val tile = when (entity.getCreature().type)
         {
           CreatureType.ROGUE -> TileBlock.rogueTile
           CreatureType.CONJURER -> TileBlock.conjurerTile

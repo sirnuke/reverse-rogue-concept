@@ -8,9 +8,8 @@ fun Entity.getPosition() = ComponentMaps.position.get(this).position
 fun Entity.getSquare(): SquareTypeComponent = ComponentMaps.squareType.get(this)
 fun Entity.getWallOrientation() = ComponentMaps.wallOrientation.get(this).wallOrientation
 fun Entity.getRoomData() = ComponentMaps.roomData.get(this)!!
-fun Entity.getCreatureType() = ComponentMaps.creatureType.get(this).type
+fun Entity.getCreature(): CreatureTypeComponent = ComponentMaps.creatureType.get(this)
 fun Entity.getAllegiance() = ComponentMaps.allegiance.get(this).allegiance
-fun Entity.getCooldown() = ComponentMaps.cooldown.get(this).duration
 
 fun Entity.isWithinRoom(position: Position): Boolean
 {
