@@ -37,6 +37,7 @@ class Main : Callable<Int>
     Application(lock, condition, soarDebugger = soarDebugger, zirconDebugMode = zirconDebugMode,
         drawGrid = drawZirconGrid)
     lock.withLock { condition.await() }
+    L.info("Quiting...")
     return 0
   }
 }

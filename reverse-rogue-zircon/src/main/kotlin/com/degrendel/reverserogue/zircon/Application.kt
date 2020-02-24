@@ -5,14 +5,10 @@ import com.degrendel.reverserogue.common.*
 import com.degrendel.reverserogue.world.RogueWorld
 import com.degrendel.reverserogue.zircon.views.InGameView
 import org.hexworks.zircon.api.CP437TilesetResources
-import org.hexworks.zircon.api.ColorThemes
 import org.hexworks.zircon.api.SwingApplications
 import org.hexworks.zircon.api.application.AppConfig
 import org.hexworks.zircon.api.application.DebugConfig
-import org.hexworks.zircon.api.builder.graphics.LayerBuilder
-import org.hexworks.zircon.api.graphics.Layer
 import org.hexworks.zircon.api.grid.TileGrid
-import org.hexworks.zircon.api.screen.Screen
 import org.hexworks.zircon.api.uievent.*
 import org.hexworks.zircon.internal.Zircon
 import java.util.concurrent.locks.Condition
@@ -29,24 +25,15 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
     // If an another display (HTML5 compatible?) is added, should be moved to common
     const val SCREEN_WIDTH = 80
     const val SCREEN_HEIGHT = 45
-
-    const val MAP_OFFSET_X = 0
-    const val MAP_OFFSET_Y = 0
   }
 
   val agent: SoarAgent = RogueSoarAgent()
   val world: World = RogueWorld()
 
-  private val tileGrid: TileGrid
-  private val screen: Screen
-
-  private val levelLayer: Layer
-
-  //private lateinit var levelView: LevelView
+  val tileGrid: TileGrid
 
   init
   {
-    Zircon.eventBus
     assert(SCREEN_WIDTH >= Level.WIDTH)
     assert(SCREEN_HEIGHT >= Level.HEIGHT)
 
@@ -65,20 +52,9 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
             .withDebugConfig(debugConfig)
             .withDebugMode(zirconDebugMode)
             .build())
-    screen = Screen.create(tileGrid)
-    screen.onShutdown { lock.withLock { condition.signal() } }
-    screen.theme = ColorThemes.adriftInDreams()
+    tileGrid.onShutdown { lock.withLock { condition.signal() } }
 
-    screen.display()
-
-    levelLayer = LayerBuilder.newBuilder()
-        .withOffset(MAP_OFFSET_X, MAP_OFFSET_Y)
-        .withSize(Level.WIDTH, Level.HEIGHT)
-        .build()
-
-    tileGrid.addLayer(levelLayer)
-
-    val view = InGameView(this, tileGrid)
+    val view = InGameView(this)
 
     if (zirconDebugMode)
     {
@@ -89,6 +65,8 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
       }
     }
 
-    screen.dock(view)
+    world.generateLevel()
+
+    tileGrid.dock(view)
   }
 }

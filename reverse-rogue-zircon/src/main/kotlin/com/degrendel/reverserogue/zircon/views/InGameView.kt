@@ -10,38 +10,43 @@ import com.degrendel.reverserogue.common.components.*
 import com.degrendel.reverserogue.common.logger
 import com.degrendel.reverserogue.zircon.Application
 import kotlinx.collections.immutable.persistentHashMapOf
+import org.hexworks.zircon.api.ColorThemes
 import org.hexworks.zircon.api.GameComponents
 import org.hexworks.zircon.api.builder.game.GameAreaBuilder
 import org.hexworks.zircon.api.data.Position3D
 import org.hexworks.zircon.api.data.Size3D
 import org.hexworks.zircon.api.data.Tile
 import org.hexworks.zircon.api.data.base.BaseBlock
-import org.hexworks.zircon.api.grid.TileGrid
 import org.hexworks.zircon.api.uievent.*
 import org.hexworks.zircon.api.view.base.BaseView
 import java.util.*
 
-class InGameView(private val application: Application, tileGrid: TileGrid) : BaseView(tileGrid)
+class InGameView(private val application: Application) : BaseView(application.tileGrid)
 {
   companion object
   {
     private val L by logger()
+
+    const val MAP_OFFSET_X = 0
+    const val MAP_OFFSET_Y = 0
   }
 
-  // TODO: Probably want three cases:
-  //  1. position + square type and not known or visible
-  //  2. position + square type and known but not visible
-  //  3. position + square type and visible
   // All squares
   private val levelSquares = Family.all(PositionComponent::class.java, SquareTypeComponent::class.java).get()
 
+  // TODO: Probably want three cases:
+  //  1. position + square type -> set base tile
+  //  2. position + square type and known but not visible -> set to known variant
+  //  3. position + square type and rogue visible -> set to visible variant
+
   init
   {
+    screen.theme = ColorThemes.adriftInDreams()
     application.world.ecs.addEntityListener(levelSquares, object : EntityListener
     {
       override fun entityAdded(entity: Entity)
       {
-        L.info("New entity! {}", entity)
+        L.debug("New entity! {}", entity)
         val tile = when (entity.getSquareType())
         {
           SquareType.BLOCKED -> TileBlock.blockedTile
@@ -58,13 +63,14 @@ class InGameView(private val application: Application, tileGrid: TileGrid) : Bas
 
       override fun entityRemoved(entity: Entity)
       {
+        // NOTE: Since no action is performed (and apparently can't remove blocks anyway), this requires levels to be
+        // the same size each time they are generated.
       }
     })
 
     screen.handleMouseEvents(MouseEventType.MOUSE_CLICKED) { _: MouseEvent, _: UIEventPhase ->
       L.info("Mouse clicked!")
       application.world.generateLevel()
-      //levelView = LevelView(this, levelLayer, world.generateLevel())
       UIEventResponse.processed()
     }
   }
@@ -76,13 +82,16 @@ class InGameView(private val application: Application, tileGrid: TileGrid) : Bas
 
   override fun onDock()
   {
-    L.info("InGameView docked!")
+    L.info("Docking InGameView")
     screen.handleKeyboardEvents(KeyboardEventType.KEY_PRESSED) { event: KeyboardEvent, _: UIEventPhase ->
       // TODO: Handle text input
       Pass
     }
 
-    val levelComponent = GameComponents.newGameComponentBuilder<Tile, TileBlock>().withGameArea(gameArea).build()
+    val levelComponent = GameComponents.newGameComponentBuilder<Tile, TileBlock>()
+        .withGameArea(gameArea)
+        .withPosition(MAP_OFFSET_X, MAP_OFFSET_Y)
+        .build()
 
     screen.addComponent(levelComponent)
   }
