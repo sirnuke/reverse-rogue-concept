@@ -40,7 +40,8 @@ class LevelState(private val world: RogueWorld) : Level
 
       override fun isValid(room: Room) = true
     })
-    dungeonGenerator.minRoomSize = 5
+    dungeonGenerator.minRoomSize = Level.MINIMUM_ROOM_SIZE
+    dungeonGenerator.maxRoomsAmount = Level.MAXIMUM_NUMBER_OF_ROOMS
     val grid = Grid(Level.WIDTH, Level.HEIGHT)
 
     dungeonGenerator.generate(grid)

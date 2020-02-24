@@ -8,6 +8,10 @@ interface Level
   {
     const val HEIGHT = 32
     const val WIDTH = 64
+
+    // NOTE: Must be odd (required by Noise4j)
+    const val MINIMUM_ROOM_SIZE = 5
+    const val MAXIMUM_NUMBER_OF_ROOMS = 10
   }
 
   fun getSquare(position: Position): Entity
