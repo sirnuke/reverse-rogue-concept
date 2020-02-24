@@ -186,6 +186,8 @@ class LevelState(private val world: RogueWorld) : Level
     entity.add(PositionComponent(position))
   }
 
+  fun getRandomRooms(count: Int): List<Entity> = rooms.shuffled().dropLast(rooms.size - count)
+
   override fun getCreature(position: Position) = map[position.x][position.y].creature
 
   override fun canMoveTo(position: Position): Boolean

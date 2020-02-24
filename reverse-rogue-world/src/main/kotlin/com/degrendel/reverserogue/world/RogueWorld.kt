@@ -51,8 +51,14 @@ class RogueWorld : World
   override fun spawn()
   {
     _currentLevel!!.let {
-      it.spawnCreature(conjurer, Position(2, 2))
-      it.spawnCreature(rogue, Position(4, 4))
+      val entryPoints = it.getRandomRooms(3)
+      assert(entryPoints.size == 3)
+      // TODO: Rogue will eventually spawn in different rooms (up versus down)
+      // TODO: Use this to spawn the staircases
+      // TODO: Select random spot in the room
+      // TODO: Should conjurer spawn in the opposite staircase?
+      it.spawnCreature(conjurer, entryPoints[0].getPosition())
+      it.spawnCreature(rogue, entryPoints[1].getPosition())
     }
   }
 
