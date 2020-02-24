@@ -19,7 +19,7 @@ interface Level
 
   fun getCreature(position: Position): Entity?
 
-  fun canMoveTo(position: Position): Boolean
+  fun canMoveTo(from: Position, direction: EightWay): Boolean
 
   fun inBounds(position: Position): Boolean
 }

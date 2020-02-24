@@ -63,12 +63,9 @@ class RogueWorld : World
 
   override fun move(entity: Entity, direction: EightWay)
   {
-    val old = entity.getPosition()
-    val new = old.move(direction)
-
     _currentLevel!!.let {
-      if (!it.canMoveTo(new)) return
-      it.moveCreature(entity, new)
+      if (!it.canMoveTo(entity.getPosition(), direction)) return
+      it.moveCreature(entity, direction)
     }
 
     update()

@@ -170,20 +170,20 @@ class LevelState(private val world: RogueWorld) : Level
   /**
    * Moves a creature to a different tile.
    *
-   * Asserts that the creature is in the current position, and that the new position is free.  Does not assert that it
-   * is within the appropriate distance.  Removes the old position component, and adds a new one, to trigger upstream
-   * listeners.
+   * Asserts that the creature is in the current position, and that the new position is free.  Removes the old position
+   * component, and adds a new one, to trigger upstream listeners.
    */
-  fun moveCreature(entity: Entity, position: Position)
+  fun moveCreature(entity: Entity, direction: EightWay)
   {
-    assert(canMoveTo(position))
-    val old = entity.getPosition()
-    assert(map[old.x][old.y].creature == entity)
-    map[old.x][old.y].creature = null
-    map[position.x][position.y].creature = entity
+    val from = entity.getPosition()
+    assert(canMoveTo(from, direction))
+    assert(map[from.x][from.y].creature == entity)
+    map[from.x][from.y].creature = null
+    val to = from.move(direction)
+    map[to.x][to.y].creature = entity
     // NOTE: Explicitly remove position to trigger refreshes upstream in Families
     entity.remove(PositionComponent::class.java)
-    entity.add(PositionComponent(position))
+    entity.add(PositionComponent(to))
   }
 
   /**
@@ -205,10 +205,11 @@ class LevelState(private val world: RogueWorld) : Level
 
   override fun getCreature(position: Position) = map[position.x][position.y].creature
 
-  override fun canMoveTo(position: Position): Boolean
+  override fun canMoveTo(from: Position, direction: EightWay): Boolean
   {
-    if (!inBounds(position)) return false
-    val square = map[position.x][position.y]
+    val to = from.move(direction)
+    if (!inBounds(to)) return false
+    val square = map[to.x][to.y]
     return (!square.square.getSquare().type.blocked && square.creature == null)
   }
 
