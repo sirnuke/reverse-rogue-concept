@@ -105,6 +105,12 @@ class LevelState(private val world: RogueWorld) : Level
     rooms.forEach { world.ecs.addEntity(it) }
   }
 
+  /**
+   * Removes all entities tracked by this level from the ECS.
+   *
+   * Anything that should be retained in the system, such as the rogue, should probably be despawned before calling
+   * this.
+   */
   fun removeFromECS()
   {
     rooms.forEach { world.ecs.removeEntity(it) }
@@ -118,25 +124,46 @@ class LevelState(private val world: RogueWorld) : Level
 
   override fun getSquare(position: Position) = map[position.x][position.y].square
 
+  /**
+   * Adds a creature to this level.
+   *
+   * Does NOT add it to the ECS engine, that should be done by the caller.  Does add a position component.
+   */
   fun spawnCreature(entity: Entity, position: Position)
   {
+    assert(inBounds(position))
     assert(map[position.x][position.y].creature == null)
     map[position.x][position.y].creature = entity
     entity.add(PositionComponent(position))
   }
 
+  /**
+   * Removes a creature from this level.
+   *
+   * Does NOT remove it from the ECS engine.  If the creature is dead, this should be done by the caller.  Removes the
+   * position component.
+   */
   fun despawnCreature(entity: Entity)
   {
     val position = entity.getPosition()
+    assert(inBounds(position))
     assert(map[position.x][position.y].creature == entity)
     map[position.x][position.y].creature = null
     entity.remove(PositionComponent::class.java)
   }
 
+  /**
+   * Moves a creature to a different tile.
+   *
+   * Asserts that the creature is in the current position, and that the new position is free.  Does not assert that it
+   * is within the appropriate distance.  Removes the old position component, and adds a new one, to trigger upstream
+   * listeners.
+   */
   fun moveCreature(entity: Entity, position: Position)
   {
     assert(canMoveTo(position))
     val old = entity.getPosition()
+    assert(map[old.x][old.y].creature == entity)
     map[old.x][old.y].creature = null
     map[position.x][position.y].creature = entity
     // NOTE: Explicitly remove position to trigger refreshes upstream in Families
@@ -153,7 +180,8 @@ class LevelState(private val world: RogueWorld) : Level
     return (!square.square.getSquareType().blocked && square.creature == null)
   }
 
-  override fun inBounds(position: Position) = (position.x >= 0 && position.y >= 0 && position.x < Level.WIDTH && position.y < Level.HEIGHT)
+  override fun inBounds(position: Position)
+      = (position.x >= 0 && position.y >= 0 && position.x < Level.WIDTH && position.y < Level.HEIGHT)
 }
 
 data class SquareInfo(val square: Entity, var creature: Entity?)
