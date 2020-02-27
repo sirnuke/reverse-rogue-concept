@@ -33,6 +33,13 @@ class RogueWorld(override val eventBus: EventBus) : World
       .add(AllegianceComponent(Allegiance.ROGUE))
       .let { ecs.addEntity(it); it }
 
+  private val actionQueueSystem = ActionQueueSystem(this)
+
+  init
+  {
+    ecs.addSystem(actionQueueSystem)
+  }
+
   override fun generateLevel(): LevelState
   {
     _currentLevel?.let {
