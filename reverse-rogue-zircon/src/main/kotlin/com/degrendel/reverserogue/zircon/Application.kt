@@ -28,7 +28,7 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
   }
 
   val agent: SoarAgent = RogueSoarAgent()
-  val world: World = RogueWorld()
+  val world: World = RogueWorld(Zircon.eventBus)
 
   val tileGrid: TileGrid
 
