@@ -42,4 +42,4 @@ class Main : Callable<Int>
   }
 }
 
-fun main(args: Array<String>): Unit = exitProcess(CommandLine(Main()).execute(*args))
+fun main(args: Array<String>): Unit = exitProcess(CommandLine.call(Main(), *args))
