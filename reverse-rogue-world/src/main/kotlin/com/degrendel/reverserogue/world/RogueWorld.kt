@@ -5,9 +5,8 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.Family
 import com.degrendel.reverserogue.common.*
 import com.degrendel.reverserogue.common.components.*
-import org.hexworks.cobalt.events.api.EventBus
 
-class RogueWorld(override val eventBus: EventBus) : World
+class RogueWorld : World
 {
   companion object
   {

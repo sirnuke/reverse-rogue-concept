@@ -2,7 +2,6 @@ package com.degrendel.reverserogue.common
 
 import com.badlogic.ashley.core.Engine
 import com.badlogic.ashley.core.Entity
-import org.hexworks.cobalt.events.api.EventBus
 
 interface World
 {
@@ -11,8 +10,6 @@ interface World
 
   val conjurer: Entity
   val rogue: Entity
-
-  val eventBus: EventBus
 
   fun generateLevel(): Level
 
