@@ -6,8 +6,12 @@ import com.badlogic.ashley.core.Family
 import com.degrendel.reverserogue.common.*
 import com.degrendel.reverserogue.common.components.*
 import com.degrendel.reverserogue.zircon.Application
+import com.degrendel.reverserogue.zircon.MouseButtons
 import com.degrendel.reverserogue.zircon.components.DrawnAtComponent
 import com.degrendel.reverserogue.zircon.components.getDrawnAt
+import com.degrendel.reverserogue.zircon.events.PlayerActionInput
+import com.degrendel.reverserogue.zircon.toPosition
+import com.degrendel.reverserogue.zircon.toPosition3D
 import kotlinx.collections.immutable.persistentHashMapOf
 import org.hexworks.zircon.api.ColorThemes
 import org.hexworks.zircon.api.GameComponents
@@ -16,9 +20,12 @@ import org.hexworks.zircon.api.data.Position3D
 import org.hexworks.zircon.api.data.Size3D
 import org.hexworks.zircon.api.data.Tile
 import org.hexworks.zircon.api.data.base.BaseBlock
+import org.hexworks.zircon.api.graphics.Layer
 import org.hexworks.zircon.api.uievent.*
 import org.hexworks.zircon.api.view.base.BaseView
+import org.hexworks.zircon.internal.Zircon
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
 
 class InGameView(private val application: Application) : BaseView(application.tileGrid)
 {
@@ -30,79 +37,77 @@ class InGameView(private val application: Application) : BaseView(application.ti
     const val MAP_OFFSET_Y = 0
   }
 
-  // All squares
-  private val levelSquares = Family.all(PositionComponent::class.java, SquareTypeComponent::class.java).get()
+  private var floor = 0
 
-  // TODO: Probably want two cases:
-  //  1. position + known but not visible -> set to known variant
-  //  2. position + rogue visible -> set to visible variant
+  // TODO: Doesn't actually work the way I want, since it can increment/decrement way outside the bounds
+  // Catch in refreshMap, which also resets the value, but still feels sketchy.
+  // And are we even going to allow viewing random levels?
+  private val scrollToFloor = AtomicInteger(floor)
 
   // All spawned creatures
   private val spawnedCreatures = Family.all(PositionComponent::class.java, CreatureTypeComponent::class.java).get()
 
+  // All spawned creatures that have been drawn at least once
+  private val drawnCreatures = Family.all(PositionComponent::class.java, CreatureTypeComponent::class.java, DrawnAtComponent::class.java).get()
+
+  private val mapLayer = Layer.newBuilder()
+      .withOffset(MAP_OFFSET_X, MAP_OFFSET_Y)
+      .withSize(Level.WIDTH, Level.HEIGHT)
+      .build()
+  private val creatureLayer = Layer.newBuilder()
+      .withOffset(MAP_OFFSET_X, MAP_OFFSET_Y)
+      .withSize(Level.WIDTH, Level.HEIGHT)
+      .build()
+
   init
   {
     screen.theme = ColorThemes.adriftInDreams()
-    // TODO: tbh, this is all kinda hacky, and it's probably faster/easier to just 'redraw' the screen after each action
-    application.world.ecs.addEntityListener(levelSquares, object : EntityListener
-    {
-      override fun entityAdded(entity: Entity)
-      {
-        L.debug("New square! {}", entity)
-        val tile = when (entity.getSquare().type)
-        {
-          SquareType.BLOCKED -> TileBlock.blockedTile
-          SquareType.CORRIDOR -> TileBlock.corridorTile
-          SquareType.FLOOR -> TileBlock.floorTile
-          SquareType.WALL -> TileBlock.wallTiles.getValue(entity.getWallOrientation())
-          SquareType.DOOR -> TileBlock.doorTile
-        }
-        val position = entity.getPosition()
-        val tileBlock = TileBlock()
-        tileBlock.update { it.squareTile = tile }
-        gameArea.setBlockAt(Position3D.create(position.x, position.y, 0), tileBlock)
-        entity.add(DrawnAtComponent(position))
-      }
-
-      override fun entityRemoved(entity: Entity)
-      {
-        val position = entity.getDrawnAt()
-        gameArea.fetchBlockAt(Position3D.create(position.x, position.y, 0)).get().update { it.squareTile = null }
-        entity.remove(DrawnAtComponent::class.java)
-      }
-    })
 
     application.world.ecs.addEntityListener(spawnedCreatures, object : EntityListener
     {
       override fun entityAdded(entity: Entity)
       {
-        L.debug("Updating entity {}", entity)
+        L.info("Adding entity {}", entity)
         val position = entity.getPosition()
         val tile = when (entity.getCreature().type)
         {
-          CreatureType.ROGUE -> TileBlock.rogueTile
-          CreatureType.CONJURER -> TileBlock.conjurerTile
+          CreatureType.ROGUE -> Tiles.rogueTile
+          CreatureType.CONJURER -> Tiles.conjurerTile
         }
-        gameArea.fetchBlockAt(Position3D.create(position.x, position.y, 0)).get().update { it.creatureTile = tile }
-
+        creatureLayer.draw(tile, position.toPosition())
         entity.add(DrawnAtComponent(position))
       }
 
       override fun entityRemoved(entity: Entity)
       {
         val position = entity.getDrawnAt()
-        L.debug("Remove entity {} @ {}", entity, position)
-        gameArea.fetchBlockAt(Position3D.create(position.x, position.y, 0)).get().update { it.creatureTile = null }
+        L.info("Remove entity {} @ {}", entity, position)
         entity.remove(DrawnAtComponent::class.java)
       }
     })
 
-    screen.handleMouseEvents(MouseEventType.MOUSE_CLICKED) { _: MouseEvent, _: UIEventPhase ->
-      L.info("Mouse clicked!")
-      application.world.generateLevel()
-      application.world.spawn()
+    screen.handleMouseEvents(MouseEventType.MOUSE_MOVED) { event: MouseEvent, _ ->
+      L.debug("Mouse move at {},{}", event.position.x, event.position.y)
+      Pass
+    }
 
-      UIEventResponse.processed()
+    screen.handleMouseEvents(MouseEventType.MOUSE_CLICKED) { event: MouseEvent, _ ->
+      when (event.button)
+      {
+        MouseButtons.LEFT.id ->
+        {
+          L.info("Button1, up!")
+          scrollToFloor.incrementAndGet()
+          Processed
+        }
+        MouseButtons.RIGHT.id ->
+        {
+          L.info("Button2, down!")
+          scrollToFloor.decrementAndGet()
+          Processed
+        }
+        else -> Pass
+      }
     }
 
     screen.handleKeyboardEvents(KeyboardEventType.KEY_PRESSED) { event: KeyboardEvent, _: UIEventPhase ->
@@ -111,47 +116,47 @@ class InGameView(private val application: Application) : BaseView(application.ti
       {
         KeyCode.LEFT, KeyCode.KEY_A, KeyCode.NUMPAD_4 ->
         {
-          application.world.move(application.world.conjurer, EightWay.WEST)
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.WEST), this))
           Processed
         }
         KeyCode.RIGHT, KeyCode.KEY_D, KeyCode.NUMPAD_6 ->
         {
-          application.world.move(application.world.conjurer, EightWay.EAST)
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.EAST), this))
           Processed
         }
         KeyCode.UP, KeyCode.KEY_W, KeyCode.NUMPAD_8 ->
         {
-          application.world.move(application.world.conjurer, EightWay.NORTH)
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.NORTH), this))
           Processed
         }
         KeyCode.DOWN, KeyCode.KEY_X, KeyCode.NUMPAD_2 ->
         {
-          application.world.move(application.world.conjurer, EightWay.SOUTH)
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.SOUTH), this))
           Processed
         }
         KeyCode.HOME, KeyCode.KEY_Q, KeyCode.NUMPAD_7 ->
         {
-          application.world.move(application.world.conjurer, EightWay.NORTH_WEST)
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.NORTH_WEST), this))
           Processed
         }
         KeyCode.PAGE_UP, KeyCode.KEY_E, KeyCode.NUMPAD_9 ->
         {
-          application.world.move(application.world.conjurer, EightWay.NORTH_EAST)
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.NORTH_EAST), this))
           Processed
         }
         KeyCode.END, KeyCode.KEY_Z, KeyCode.NUMPAD_1 ->
         {
-          application.world.move(application.world.conjurer, EightWay.SOUTH_WEST)
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.SOUTH_WEST), this))
           Processed
         }
         KeyCode.PAGE_DOWN, KeyCode.KEY_C, KeyCode.NUMPAD_3 ->
         {
-          application.world.move(application.world.conjurer, EightWay.SOUTH_EAST)
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.SOUTH_EAST), this))
           Processed
         }
         KeyCode.KEY_S, KeyCode.NUMPAD_5 ->
         {
-          L.info("TODO: Sleep!")
+          Zircon.eventBus.publish(PlayerActionInput(Sleep(application.world.conjurer), this))
           Processed
         }
         else -> Pass
@@ -159,61 +164,112 @@ class InGameView(private val application: Application) : BaseView(application.ti
     }
   }
 
-  private val gameArea = GameAreaBuilder.newBuilder<Tile, TileBlock>()
-      .withActualSize(Size3D.create(Level.WIDTH, Level.HEIGHT, 1))
-      .withVisibleSize(Size3D.create(Level.WIDTH, Level.HEIGHT, 1))
-      .build()
+  fun runGameLoop()
+  {
+    L.info("Starting game loop")
+    application.world.ecs.getEntitiesFor(spawnedCreatures).forEach { creature ->
+      creature.add(DrawnAtComponent(creature.getPosition()))
+    }
+
+    val job = application.world.runGame()
+  }
+
+  fun refreshMap()
+  {
+    L.debug("Refreshing map!")
+    val targetFloor = scrollToFloor.get().coerceIn(0, Level.FLOORS - 1)
+    scrollToFloor.set(targetFloor)
+    if (targetFloor != floor)
+    {
+      L.info("Scrolling to {}", targetFloor)
+      floor = targetFloor
+      mapLayer.clear()
+    }
+    // TODO: To add blocking animations, make a list of suspendCoroutines
+    // TODO: Clearing this layer is causing flicker - but the caller should know if it's been changed.
+    //    Alternatively, store this as a TileMap, which should be faster
+    creatureLayer.clear()
+    // val blockingAnimations = mutableListOf()
+    val level = application.world.getLevel(floor)
+    (0 until Level.WIDTH).forEach { x ->
+      (0 until Level.HEIGHT).forEach { y ->
+        // TODO: Update visible, known variants
+        val square = level.getSquare(x, y)
+        val tile = when (square.getSquare().type)
+        {
+          SquareType.BLOCKED -> Tiles.blockedTile
+          SquareType.CORRIDOR -> Tiles.corridorTile
+          SquareType.FLOOR -> Tiles.floorTile
+          SquareType.WALL -> Tiles.wallTiles.getValue(square.getWallOrientation())
+          SquareType.DOOR -> Tiles.doorTile
+        }
+        mapLayer.draw(tile, org.hexworks.zircon.api.data.Position.create(x, y))
+      }
+    }
+    application.world.ecs.getEntitiesFor(drawnCreatures).forEach { creature ->
+      val position = creature.getPosition()
+      if (position.floor != floor) return@forEach
+      val drawn = creature.getDrawnAt()
+      val tile = when (creature.getCreature().type)
+      {
+        CreatureType.ROGUE -> Tiles.rogueTile
+        CreatureType.CONJURER -> Tiles.conjurerTile
+      }
+      creatureLayer.draw(tile, position.toPosition())
+      creature.add(DrawnAtComponent(position))
+      // if (drawn != position && drawn.floor == position.floor)
+      // Add movement animation?
+    }
+
+    // Wait on list of firing animations
+  }
 
   override fun onDock()
   {
     L.info("Docking InGameView")
 
-    val levelComponent = GameComponents.newGameComponentBuilder<Tile, TileBlock>()
-        .withGameArea(gameArea)
-        .withPosition(MAP_OFFSET_X, MAP_OFFSET_Y)
-        .build()
+    screen.addLayer(mapLayer)
+    screen.addLayer(creatureLayer)
 
-    screen.addComponent(levelComponent)
+    // TODO: Log view, and side bar controls
   }
+
+  fun enablePlayerInputGUI()
+  {
+    // TODO: Enable player input GUI (or shade?)
+  }
+
+  fun disablePlayerInputGUI()
+  {
+    // TODO: Disable player input GUI (or shade?)
+  }
+
 }
 
-class TileBlock : BaseBlock<Tile>(emptyTile = Tile.empty(), tiles = persistentHashMapOf())
+object Tiles
 {
-  var squareTile: Tile? = null
-  var creatureTile: Tile? = null
+  val floorTile = Tile.defaultTile().withCharacter('.')
+  val blockedTile = Tile.defaultTile().withCharacter(' ')
+  val corridorTile = Tile.defaultTile().withCharacter('#')
+  val doorTile = Tile.defaultTile().withCharacter('+')
+  val rogueTile = Tile.defaultTile().withCharacter(0x263A.toChar())
+  val conjurerTile = Tile.defaultTile().withCharacter('@')
 
-  fun update(lambda: (TileBlock) -> Unit)
+  val wallTiles = EnumMap<WallOrientation, Tile>(WallOrientation::class.java)
+
+  init
   {
-    lambda.invoke(this)
-    creatureTile?.let { top = it; return }
-    squareTile?.let { top = it; return }
-    top = Tile.empty()
-  }
-
-  companion object
-  {
-    val floorTile = Tile.defaultTile().withCharacter('.')
-    val blockedTile = Tile.defaultTile().withCharacter(' ')
-    val corridorTile = Tile.defaultTile().withCharacter('#')
-    val doorTile = Tile.defaultTile().withCharacter('+')
-    val rogueTile = Tile.defaultTile().withCharacter(0x263A.toChar())
-    val conjurerTile = Tile.defaultTile().withCharacter('@')
-
-    val wallTiles = EnumMap<WallOrientation, Tile>(WallOrientation::class.java)
-
-    init
-    {
-      wallTiles[WallOrientation.NORTH_SOUTH] = Tile.defaultTile().withCharacter(0x2551.toChar())
-      wallTiles[WallOrientation.EAST_WEST] = Tile.defaultTile().withCharacter(0x2550.toChar())
-      wallTiles[WallOrientation.NORTH_EAST] = Tile.defaultTile().withCharacter(0x255A.toChar())
-      wallTiles[WallOrientation.EAST_SOUTH] = Tile.defaultTile().withCharacter(0x2554.toChar())
-      wallTiles[WallOrientation.SOUTH_WEST] = Tile.defaultTile().withCharacter(0x2557.toChar())
-      wallTiles[WallOrientation.WEST_NORTH] = Tile.defaultTile().withCharacter(0x255D.toChar())
-      wallTiles[WallOrientation.NORTH_EAST_SOUTH] = Tile.defaultTile().withCharacter(0x2560.toChar())
-      wallTiles[WallOrientation.EAST_SOUTH_WEST] = Tile.defaultTile().withCharacter(0x2566.toChar())
-      wallTiles[WallOrientation.SOUTH_WEST_NORTH] = Tile.defaultTile().withCharacter(0x2563.toChar())
-      wallTiles[WallOrientation.WEST_NORTH_EAST] = Tile.defaultTile().withCharacter(0x2569.toChar())
-      wallTiles[WallOrientation.ALL] = Tile.defaultTile().withCharacter(0x256C.toChar())
-    }
+    wallTiles[WallOrientation.NORTH_SOUTH] = Tile.defaultTile().withCharacter(0x2551.toChar())
+    wallTiles[WallOrientation.EAST_WEST] = Tile.defaultTile().withCharacter(0x2550.toChar())
+    wallTiles[WallOrientation.NORTH_EAST] = Tile.defaultTile().withCharacter(0x255A.toChar())
+    wallTiles[WallOrientation.EAST_SOUTH] = Tile.defaultTile().withCharacter(0x2554.toChar())
+    wallTiles[WallOrientation.SOUTH_WEST] = Tile.defaultTile().withCharacter(0x2557.toChar())
+    wallTiles[WallOrientation.WEST_NORTH] = Tile.defaultTile().withCharacter(0x255D.toChar())
+    wallTiles[WallOrientation.NORTH_EAST_SOUTH] = Tile.defaultTile().withCharacter(0x2560.toChar())
+    wallTiles[WallOrientation.EAST_SOUTH_WEST] = Tile.defaultTile().withCharacter(0x2566.toChar())
+    wallTiles[WallOrientation.SOUTH_WEST_NORTH] = Tile.defaultTile().withCharacter(0x2563.toChar())
+    wallTiles[WallOrientation.WEST_NORTH_EAST] = Tile.defaultTile().withCharacter(0x2569.toChar())
+    wallTiles[WallOrientation.ALL] = Tile.defaultTile().withCharacter(0x256C.toChar())
   }
 }
+

@@ -3,7 +3,11 @@ package com.degrendel.reverserogue.zircon
 import com.degrendel.reverserogue.agent.RogueSoarAgent
 import com.degrendel.reverserogue.common.*
 import com.degrendel.reverserogue.world.RogueWorld
+import com.degrendel.reverserogue.zircon.events.PlayerActionInput
 import com.degrendel.reverserogue.zircon.views.InGameView
+import org.hexworks.cobalt.events.api.DisposeSubscription
+import org.hexworks.cobalt.events.api.KeepSubscription
+import org.hexworks.cobalt.events.api.subscribeTo
 import org.hexworks.zircon.api.CP437TilesetResources
 import org.hexworks.zircon.api.SwingApplications
 import org.hexworks.zircon.api.application.AppConfig
@@ -14,9 +18,11 @@ import org.hexworks.zircon.internal.Zircon
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import kotlin.system.exitProcess
 
-class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boolean = false, zirconDebugMode: Boolean = false, drawGrid: Boolean = false)
+class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boolean = false, zirconDebugMode: Boolean = false, drawGrid: Boolean = false) : Frontend
 {
   companion object
   {
@@ -27,8 +33,10 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
     const val SCREEN_HEIGHT = 45
   }
 
+  private val inGameView: InGameView
+
   val agent: SoarAgent = RogueSoarAgent()
-  val world: World = RogueWorld()
+  val world: World = RogueWorld(this)
 
   val tileGrid: TileGrid
 
@@ -54,20 +62,40 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
             .build())
     tileGrid.onShutdown { lock.withLock { condition.signal() } }
 
-    val view = InGameView(this)
+    inGameView = InGameView(this)
 
     if (zirconDebugMode)
     {
-      view.screen.handleKeyboardEvents(KeyboardEventType.KEY_PRESSED) { event: KeyboardEvent, _: UIEventPhase ->
+      inGameView.screen.handleKeyboardEvents(KeyboardEventType.KEY_PRESSED) { event: KeyboardEvent, _: UIEventPhase ->
         if (event.code == KeyCode.ESCAPE)
           exitProcess(0)
         UIEventResponse.pass()
       }
     }
 
-    world.generateLevel()
-    world.spawn()
+    tileGrid.dock(inGameView)
 
-    tileGrid.dock(view)
+    inGameView.runGameLoop()
+  }
+
+  override suspend fun getPlayerInput(): Action = suspendCoroutine { continuation ->
+    // TODO: this feels a bit race conditiony - could disable input fire before enable input?
+    // Alternatively, it's almost certainly fine to always enable the GUI, but ignore events if not the players turn
+    inGameView.enablePlayerInputGUI()
+    Zircon.eventBus.subscribeTo<PlayerActionInput> { it ->
+      if (world.isValidAction(it.action))
+      {
+        inGameView.disablePlayerInputGUI()
+        continuation.resume(it.action)
+        DisposeSubscription
+      }
+      else
+        KeepSubscription
+    }
+  }
+
+  override suspend fun refreshMap()
+  {
+    inGameView.refreshMap()
   }
 }
