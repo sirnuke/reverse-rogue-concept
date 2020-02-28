@@ -78,6 +78,9 @@ class RogueWorld(override val frontend: Frontend, override val agent: SoarAgent)
       updateWorld()
       val action = actionQueueSystem.execute()
       executeAction(action)
+      // TODO: Alternatively for performance, offer a 'peak ahead' in actionQueueSystem.  If the next action is a
+      //       simple AI (i.e. should be near immediately), skip refreshing the map.  Could also have a timer that
+      //       asserts it hasn't been too long.
       frontend.refreshMap()
     }
   }
