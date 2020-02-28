@@ -35,8 +35,7 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
 
   private val inGameView: InGameView
 
-  val agent: SoarAgent = RogueSoarAgent()
-  val world: World = RogueWorld(this)
+  val world: World = RogueWorld(this, RogueSoarAgent())
 
   val tileGrid: TileGrid
 
@@ -46,7 +45,7 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
     assert(SCREEN_HEIGHT >= Level.HEIGHT)
 
     if (soarDebugger)
-      agent.openDebugger()
+      world.agent.openDebugger()
 
     val debugConfig = if (drawGrid)
       DebugConfig(displayGrid = true, displayCoordinates = true, displayFps = true)

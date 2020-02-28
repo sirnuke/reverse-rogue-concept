@@ -10,7 +10,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class RogueWorld(val frontend: Frontend) : World
+class RogueWorld(override val frontend: Frontend, override val agent: SoarAgent) : World
 {
   companion object
   {
@@ -77,6 +77,17 @@ class RogueWorld(val frontend: Frontend) : World
     {
       is Sleep -> true
       is Move -> level.canMoveTo(action.entity.getPosition(), action.direction)
+    }
+  }
+
+  override fun computeCost(action: Action): Long
+  {
+    // TODO: Make these configurable plus action values
+    // TODO: Should a diagonal move cost more than straight?
+    return when (action)
+    {
+      is Sleep -> 100L
+      is Move -> 120L
     }
   }
 

@@ -11,6 +11,11 @@ interface World
   val conjurer: Entity
   val rogue: Entity
 
+  val agent: SoarAgent
+  val frontend: Frontend
+
+  fun computeCost(action: Action): Long
+
   fun updateWorld()
 
   fun runGame(): Job
