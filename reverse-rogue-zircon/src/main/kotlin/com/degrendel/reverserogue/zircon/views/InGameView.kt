@@ -229,6 +229,10 @@ class InGameView(private val application: Application) : BaseView(application.ti
       // TODO: If E1 is drawn on A moves to B, and E2 is drawn on B moves to C, need to make sure they don't step on
       //    each other for B -- is this logic sufficient?
       val drawnZircon = drawn.toPosition()
+      // TODO: Adding an Tile.empty() is necessary to clear the old creature, but there is a bit of a performance hit.
+      //      Every time something moves, there's an extra tile added.  Maybe not bad since the world isn't that big.
+      //      I think the best approach is either 1. clear out any Tile.empty()s after they've been drawn, or 2. preload
+      //      the map with empties so the performance hit is consistent
       if (creatureMap[drawnZircon] == tile)
         creatureMap[drawnZircon] = Tile.empty()
       creatureMap[position.toPosition()] = tile
