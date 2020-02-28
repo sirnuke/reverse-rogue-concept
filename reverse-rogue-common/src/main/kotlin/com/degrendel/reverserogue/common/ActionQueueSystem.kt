@@ -6,7 +6,7 @@ import com.badlogic.ashley.core.EntitySystem
 import com.degrendel.reverserogue.common.components.getCreature
 import java.util.*
 
-class ActionQueueSystem(private val world: World) : EntitySystem(), EntityListener
+class ActionQueueSystem(private val world: World) : EntityListener
 {
   private val queue = PriorityQueue<Entity>(10, Comparator<Entity> { e1, e2 ->
     val c1 = e1.getCreature()
@@ -29,8 +29,10 @@ class ActionQueueSystem(private val world: World) : EntitySystem(), EntityListen
     queue.remove(entity)
   }
 
-  override fun update(deltaTime: Float)
+  suspend fun execute()
   {
-    world.updateCreature(queue.poll() ?: return)
+    val entity = queue.poll()
+    // Wait for next action
+    // Reinsert into queue
   }
 }
