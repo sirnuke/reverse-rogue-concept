@@ -24,6 +24,8 @@ interface Level
 
   fun canMoveTo(from: Position, direction: EightWay): Boolean
 
+  fun isNavigable(position: Position): Boolean
+
   fun inBounds(position: Position): Boolean
 }
 
@@ -36,6 +38,13 @@ data class Position(val x: Int, val y: Int, val floor: Int)
   fun move(direction: Cardinal) = Position(x + direction.x, y + direction.y, floor)
 
   fun random(width: Int, height: Int) = Position(x + Random.nextInt(width), y + Random.nextInt(height), floor)
+
+  fun isValid(): Boolean
+  {
+    return !(x < 0 || x >= Level.WIDTH || y < 0 || y >= Level.WIDTH || floor < 0 || floor >= Level.FLOORS)
+  }
+
+  fun eightWayNeighbors(): List<Position> = EightWay.values().map { move(it) }.filter { it.isValid() }
 }
 
 enum class SquareType(val blocked: Boolean)

@@ -216,9 +216,12 @@ class LevelState(private val world: RogueWorld, override val floor: Int) : Level
   {
     val to = from.move(direction)
     if (!inBounds(to)) return false
-    val square = map[to.x][to.y]
-    return (!square.square.getSquare().type.blocked && square.creature == null)
+    return isClear(map[to.x][to.y])
   }
+
+  private fun isClear(square: SquareInfo) = (!square.square.getSquare().type.blocked && square.creature == null)
+
+  override fun isNavigable(position: Position) = isClear(map[position.x][position.y])
 
   override fun inBounds(position: Position) = (position.x >= 0 && position.y >= 0 && position.x < Level.WIDTH && position.y < Level.HEIGHT)
 }
