@@ -60,15 +60,25 @@ class RogueWorld(override val frontend: Frontend, override val agent: SoarAgent)
   }
 
   override fun runGame(): Job = GlobalScope.launch {
+    // TODO: If we need a lot more performance with drawing, this /should/ work as expected
+    //      the frontend access the levels, but the actual modifications shouldn't impact it?
+    //      It desyncs the drawing from the turn execution, which is visible noticable, however
+    /*
+    launch {
+      while (true)
+      {
+        frontend.refreshMap()
+        delay(100L)
+      }
+    }
+     */
     frontend.refreshMap()
     while (true)
     {
       updateWorld()
       val action = actionQueueSystem.execute()
       executeAction(action)
-      // TODO: Execution Action
       frontend.refreshMap()
-      delay(100L)
     }
   }
 
@@ -78,7 +88,8 @@ class RogueWorld(override val frontend: Frontend, override val agent: SoarAgent)
     when (action)
     {
       is Sleep -> L.debug("Sleeping...")
-      is Move -> {
+      is Move ->
+      {
         val position = action.entity.getPosition()
         val level = levels.getValue(position.floor)
         level.moveCreature(action.entity, action.direction)
