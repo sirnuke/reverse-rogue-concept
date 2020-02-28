@@ -18,12 +18,14 @@ class RogueWorld(override val frontend: Frontend, override val agent: SoarAgent)
   }
 
   override val ecs = Engine()
+  private val actionQueueSystem = ActionQueueSystem(this)
 
   private val allSpawnedEntities = Family.all(CreatureTypeComponent::class.java, PositionComponent::class.java).get()
   private val levels = mutableMapOf<Int, LevelState>()
 
   init
   {
+    ecs.addEntityListener(allSpawnedEntities, actionQueueSystem)
     (0 until Level.FLOORS).forEach { floor -> levels[floor] = LevelState(this, floor) }
   }
 
@@ -38,11 +40,8 @@ class RogueWorld(override val frontend: Frontend, override val agent: SoarAgent)
       .add(CreatureTypeComponent(getNextCreatureId(), CreatureType.ROGUE, ControllerType.SIMPLE_AI, 0L))
       .add(AllegianceComponent(Allegiance.ROGUE))
 
-  private val actionQueueSystem = ActionQueueSystem(this)
-
   init
   {
-    ecs.addEntityListener(allSpawnedEntities, actionQueueSystem)
     levels.getValue(0).let {
       val rooms = it.getRandomRooms(3)
       assert(rooms.size == 3)
