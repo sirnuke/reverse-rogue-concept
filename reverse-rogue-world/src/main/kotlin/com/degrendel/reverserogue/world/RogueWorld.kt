@@ -5,62 +5,45 @@ import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.Family
 import com.degrendel.reverserogue.common.*
 import com.degrendel.reverserogue.common.components.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
-class RogueWorld : World
+class RogueWorld(val frontend: Frontend) : World
 {
   companion object
   {
     private val L by logger()
   }
 
-  private val allSpawnedEntities = Family.all(CreatureTypeComponent::class.java, PositionComponent::class.java)
+  override val ecs = Engine()
 
-  private var _currentLevel: LevelState? = null
-  override val currentLevel get() = _currentLevel
+  private val allSpawnedEntities = Family.all(CreatureTypeComponent::class.java, PositionComponent::class.java).get()
+  private val levels = mutableMapOf<Int, LevelState>()
+
+  init
+  {
+    (0 until Level.FLOORS).forEach { floor -> levels[floor] = LevelState(this, floor) }
+  }
 
   private var nextCreatureId = 1
   private var clock = 0L
 
-  override val ecs = Engine()
 
   override val conjurer: Entity = Entity()
       .add(CreatureTypeComponent(getNextCreatureId(), CreatureType.CONJURER, 0L))
       .add(AllegianceComponent(Allegiance.CONJURER))
-      .let { ecs.addEntity(it); it }
   override val rogue: Entity = ecs.createEntity()
       .add(CreatureTypeComponent(getNextCreatureId(), CreatureType.ROGUE, 0L))
       .add(AllegianceComponent(Allegiance.ROGUE))
-      .let { ecs.addEntity(it); it }
 
   private val actionQueueSystem = ActionQueueSystem(this)
 
   init
   {
-    ecs.addSystem(actionQueueSystem)
-  }
-
-  override fun generateLevel(): LevelState
-  {
-    _currentLevel?.let {
-      it.despawnCreature(conjurer)
-      it.despawnCreature(rogue)
-      it.removeFromECS()
-    }
-
-    val nextLevel = LevelState(this)
-    _currentLevel = nextLevel
-    update()
-    return nextLevel
-  }
-
-  override fun update()
-  {
-    ecs.update(0.0f)
-  }
-
-  override fun spawn()
-  {
-    _currentLevel!!.let {
+    ecs.addEntityListener(allSpawnedEntities, actionQueueSystem)
+    levels.getValue(0).let {
       val rooms = it.getRandomRooms(3)
       assert(rooms.size == 3)
       // TODO: Rogue will eventually spawn in different rooms (up versus down)
@@ -69,22 +52,35 @@ class RogueWorld : World
       it.spawnCreature(conjurer, it.getRandomPointInRoom(rooms[0]))
       it.spawnCreature(rogue, it.getRandomPointInRoom(rooms[1]))
     }
+    updateWorld()
   }
 
-  override fun move(entity: Entity, direction: EightWay)
+  override fun updateWorld()
   {
-    _currentLevel!!.let {
-      if (!it.canMoveTo(entity.getPosition(), direction)) return
-      it.moveCreature(entity, direction)
+    ecs.update(0.0f)
+  }
+
+  override fun runGame(): Job = GlobalScope.launch {
+    while (true)
+    {
+      updateWorld()
+      actionQueueSystem.execute()
+      frontend.refreshMap()
+      delay(100L)
     }
-
-    update()
   }
 
-  override fun updateCreature(creature: Entity)
+  override fun isValidAction(action: Action): Boolean
   {
-    TODO("not implemented")
+    val level = getLevel(action.entity.getPosition().floor)
+    return when (action)
+    {
+      is Sleep -> true
+      is Move -> level.canMoveTo(action.entity.getPosition(), action.direction)
+    }
   }
+
+  override fun getLevel(floor: Int) = levels.getValue(floor)
 
   private fun getNextCreatureId(): Int
   {

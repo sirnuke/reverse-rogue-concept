@@ -8,7 +8,7 @@ import com.github.czyzby.noise4j.map.generator.room.AbstractRoomGenerator.Room
 import com.github.czyzby.noise4j.map.generator.room.RoomType
 import com.github.czyzby.noise4j.map.generator.room.dungeon.DungeonGenerator
 
-class LevelState(private val world: RogueWorld) : Level
+class LevelState(private val world: RogueWorld, override val floor: Int) : Level
 {
   companion object
   {
@@ -25,7 +25,7 @@ class LevelState(private val world: RogueWorld) : Level
     {
       val row = mutableListOf<SquareInfo>()
       for (y in 0 until Level.HEIGHT)
-        row += SquareInfo(Entity().add(PositionComponent(Position(x, y))), creature = null)
+        row += SquareInfo(Entity().add(PositionComponent(Position(x, y, floor))), creature = null)
       map += row
     }
     val dungeonGenerator = DungeonGenerator()
@@ -34,7 +34,7 @@ class LevelState(private val world: RogueWorld) : Level
       override fun carve(room: Room, grid: Grid, value: Float)
       {
         L.debug("Carving room ({},{})->({}x{})", room.x, room.y, room.width, room.height)
-        rooms += Entity().add(PositionComponent(Position(room.x, room.y))).add(RoomComponent(rooms.size, room.width, room.height))
+        rooms += Entity().add(PositionComponent(Position(room.x, room.y, floor))).add(RoomComponent(rooms.size, room.width, room.height))
         room.fill(grid, value)
       }
 
@@ -47,7 +47,7 @@ class LevelState(private val world: RogueWorld) : Level
     dungeonGenerator.generate(grid)
 
     grid.forEach { _, x, y, value ->
-      val position = Position(x, y)
+      val position = Position(x, y, floor)
       val type = when (value)
       {
         1.0f -> SquareType.BLOCKED
@@ -65,11 +65,12 @@ class LevelState(private val world: RogueWorld) : Level
 
     val walls = mutableListOf<Entity>()
 
-    val wallify = { position: Position ->
-      if (map[position.x][position.y].square.getSquare().type.blocked)
+    val wallify = { x: Int, y: Int ->
+      val position = Position(x, y, floor)
+      if (map[x][y].square.getSquare().type.blocked)
       {
-        walls += map[position.x][position.y].square
-        map[position.x][position.y].square.add(SquareTypeComponent(SquareType.WALL, null, setOf()))
+        walls += map[x][y].square
+        map[x][y].square.add(SquareTypeComponent(SquareType.WALL, null, setOf()))
       }
       else
       {
@@ -79,7 +80,7 @@ class LevelState(private val world: RogueWorld) : Level
           if (inBounds(neighbor))
             map[neighbor.x][neighbor.y].square.getSquare().roomId?.let { id -> visibleRooms.add(id) }
         }
-        map[position.x][position.y].square.add(SquareTypeComponent(SquareType.DOOR, null, visibleRooms))
+        map[x][y].square.add(SquareTypeComponent(SquareType.DOOR, null, visibleRooms))
       }
     }
 
@@ -91,13 +92,13 @@ class LevelState(private val world: RogueWorld) : Level
       // TODO: Gross
       for (x in (position.x - 1)..(position.x + width))
       {
-        wallify(Position(x, position.y - 1))
-        wallify(Position(x, position.y + height))
+        wallify(x, position.y - 1)
+        wallify(x, position.y + height)
       }
       for (y in (position.y - 1)..(position.y + height))
       {
-        wallify(Position(position.x - 1, y))
-        wallify(Position(position.x + width, y))
+        wallify(position.x - 1, y)
+        wallify(position.x + width, y)
       }
     }
 
@@ -126,6 +127,7 @@ class LevelState(private val world: RogueWorld) : Level
    * Anything that should be retained in the system, such as the rogue, should probably be despawned before calling
    * this.
    */
+  /*
   fun removeFromECS()
   {
     rooms.forEach { world.ecs.removeEntity(it) }
@@ -136,35 +138,38 @@ class LevelState(private val world: RogueWorld) : Level
       }
     }
   }
+   */
 
-  override fun getSquare(position: Position) = map[position.x][position.y].square
+  override fun getSquare(x: Int, y: Int) = map[x][y].square
 
   /**
    * Adds a creature to this level.
    *
-   * Does NOT add it to the ECS engine, that should be done by the caller.  Does add a position component.
+   * Also adds to ECS engine and gives the entity a position component.
    */
   fun spawnCreature(entity: Entity, position: Position)
   {
     assert(inBounds(position))
     assert(map[position.x][position.y].creature == null)
+    assert(position.floor == floor)
     map[position.x][position.y].creature = entity
     entity.add(PositionComponent(position))
+    world.ecs.addEntity(entity)
   }
 
   /**
    * Removes a creature from this level.
    *
-   * Does NOT remove it from the ECS engine.  If the creature is dead, this should be done by the caller.  Removes the
-   * position component.
+   * Also removes it from the ECS engine.  Does not remove the position component.
    */
   fun despawnCreature(entity: Entity)
   {
     val position = entity.getPosition()
     assert(inBounds(position))
     assert(map[position.x][position.y].creature == entity)
+    assert(position.floor == floor)
     map[position.x][position.y].creature = null
-    entity.remove(PositionComponent::class.java)
+    world.ecs.removeEntity(entity)
   }
 
   /**
@@ -176,13 +181,15 @@ class LevelState(private val world: RogueWorld) : Level
   fun moveCreature(entity: Entity, direction: EightWay)
   {
     val from = entity.getPosition()
+    assert(from.floor == floor)
     assert(canMoveTo(from, direction))
     assert(map[from.x][from.y].creature == entity)
     map[from.x][from.y].creature = null
     val to = from.move(direction)
     map[to.x][to.y].creature = entity
     // NOTE: Explicitly remove position to trigger refreshes upstream in Families
-    entity.remove(PositionComponent::class.java)
+    // Actually don't want this lol
+    // entity.remove(PositionComponent::class.java)
     entity.add(PositionComponent(to))
   }
 
@@ -203,7 +210,7 @@ class LevelState(private val world: RogueWorld) : Level
     return room.getPosition().random(data.width, data.height)
   }
 
-  override fun getCreature(position: Position) = map[position.x][position.y].creature
+  override fun getCreature(x: Int, y: Int) = map[x][y].creature
 
   override fun canMoveTo(from: Position, direction: EightWay): Boolean
   {
