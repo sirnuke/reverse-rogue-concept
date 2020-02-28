@@ -230,7 +230,7 @@ class InGameView(private val application: Application) : BaseView(application.ti
       //    each other for B -- is this logic sufficient?
       val drawnZircon = drawn.toPosition()
       if (creatureMap[drawnZircon] == tile)
-        creatureMap.remove(drawnZircon)
+        creatureMap[drawnZircon] = Tile.empty()
       creatureMap[position.toPosition()] = tile
       creature.add(DrawnAtComponent(position))
       // if (drawn != position && drawn.floor == position.floor)
