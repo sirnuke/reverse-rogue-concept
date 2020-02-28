@@ -78,6 +78,8 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
   }
 
   override suspend fun getPlayerInput(): Action = suspendCoroutine { continuation ->
+    // TODO: So this is a really sneaky design that seems to work exactly as hoped.  BUT, it feels off
+    //    the naive approach of queuing a big list of actions is actually closer to what we want :/
     // TODO: this feels a bit race conditiony - could disable input fire before enable input?
     // Alternatively, it's almost certainly fine to always enable the GUI, but ignore events if not the players turn
     inGameView.enablePlayerInputGUI()
