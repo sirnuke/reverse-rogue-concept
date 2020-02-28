@@ -195,7 +195,8 @@ class InGameView(private val application: Application) : BaseView(application.ti
     }
     // TODO: To add blocking animations, make a list of suspendCoroutines
     // val blockingAnimations = mutableListOf()
-    // TODO: Might be nice to have this be a map as well
+    // TODO: Might be nice to have this be a map as well -- seems to boost FPS by a small but noticeable amount.
+    //    Also if tracked in a map, easy to determine whether to draw
     val level = application.world.getLevel(floor)
     (0 until Level.WIDTH).forEach { x ->
       (0 until Level.HEIGHT).forEach { y ->
@@ -212,6 +213,7 @@ class InGameView(private val application: Application) : BaseView(application.ti
         mapLayer.draw(tile, Position.create(x, y))
       }
     }
+    // TODO: Computing whether things have changed, only draw if so
     application.world.ecs.getEntitiesFor(drawnCreatures).forEach { creature ->
       // TODO: This will need to be completely rethought if a creature can have multiple tiles
       // TODO: This is so nasty
@@ -255,17 +257,6 @@ class InGameView(private val application: Application) : BaseView(application.ti
 
     // TODO: Log view, and side bar controls
   }
-
-  fun enablePlayerInputGUI()
-  {
-    // TODO: Enable player input GUI (or shade?)
-  }
-
-  fun disablePlayerInputGUI()
-  {
-    // TODO: Disable player input GUI (or shade?)
-  }
-
 }
 
 object Tiles

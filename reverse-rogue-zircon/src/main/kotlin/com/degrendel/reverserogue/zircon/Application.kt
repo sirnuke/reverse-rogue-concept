@@ -5,9 +5,8 @@ import com.degrendel.reverserogue.common.*
 import com.degrendel.reverserogue.world.RogueWorld
 import com.degrendel.reverserogue.zircon.events.PlayerActionInput
 import com.degrendel.reverserogue.zircon.views.InGameView
-import org.hexworks.cobalt.events.api.DisposeSubscription
-import org.hexworks.cobalt.events.api.KeepSubscription
-import org.hexworks.cobalt.events.api.subscribeTo
+import kotlinx.coroutines.channels.Channel
+import org.hexworks.cobalt.events.api.simpleSubscribeTo
 import org.hexworks.zircon.api.CP437TilesetResources
 import org.hexworks.zircon.api.SwingApplications
 import org.hexworks.zircon.api.application.AppConfig
@@ -18,8 +17,6 @@ import org.hexworks.zircon.internal.Zircon
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 import kotlin.system.exitProcess
 
 class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boolean = false, zirconDebugMode: Boolean = false, drawGrid: Boolean = false) : Frontend
@@ -31,11 +28,15 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
     // If an another display (HTML5 compatible?) is added, should be moved to common
     const val SCREEN_WIDTH = 80
     const val SCREEN_HEIGHT = 45
+    const val MAX_PLAYER_QUEUED_ACTIONS = 20
   }
 
   private val inGameView: InGameView
 
   val world: World = RogueWorld(this, RogueSoarAgent())
+
+  // TODO: Probably want some way to clear this queue when changing 'modes'
+  private val playerActions = Channel<Action>(capacity = MAX_PLAYER_QUEUED_ACTIONS)
 
   val tileGrid: TileGrid
 
@@ -72,27 +73,23 @@ class Application(lock: ReentrantLock, condition: Condition, soarDebugger: Boole
       }
     }
 
+    Zircon.eventBus.simpleSubscribeTo<PlayerActionInput> {
+      playerActions.offer(it.action)
+    }
+
     tileGrid.dock(inGameView)
 
     inGameView.runGameLoop()
   }
 
-  override suspend fun getPlayerInput(): Action = suspendCoroutine { continuation ->
-    // TODO: So this is a really sneaky design that seems to work exactly as hoped.  BUT, it feels off
-    //    the naive approach of queuing a big list of actions is actually closer to what we want :/
-    // TODO: this feels a bit race conditiony - could disable input fire before enable input?
-    // Alternatively, it's almost certainly fine to always enable the GUI, but ignore events if not the players turn
-    inGameView.enablePlayerInputGUI()
-    Zircon.eventBus.subscribeTo<PlayerActionInput> { it ->
-      if (world.isValidAction(it.action))
-      {
-        inGameView.disablePlayerInputGUI()
-        continuation.resume(it.action)
-        DisposeSubscription
-      }
-      else
-        KeepSubscription
-    }
+  override suspend fun getPlayerInput(): Action
+  {
+    // TODO: This feels ... clunky
+    var action: Action
+    do
+      action = playerActions.receive()
+    while (!world.isValidAction(action))
+    return action
   }
 
   override suspend fun refreshMap()
