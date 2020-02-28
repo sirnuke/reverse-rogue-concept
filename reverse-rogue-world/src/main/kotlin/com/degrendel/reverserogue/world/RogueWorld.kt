@@ -30,12 +30,12 @@ class RogueWorld(val frontend: Frontend) : World
   private var nextCreatureId = 1
   private var clock = 0L
 
-
   override val conjurer: Entity = Entity()
-      .add(CreatureTypeComponent(getNextCreatureId(), CreatureType.CONJURER, 0L))
+      .add(CreatureTypeComponent(getNextCreatureId(), CreatureType.CONJURER, ControllerType.PLAYER, 0L))
       .add(AllegianceComponent(Allegiance.CONJURER))
   override val rogue: Entity = ecs.createEntity()
-      .add(CreatureTypeComponent(getNextCreatureId(), CreatureType.ROGUE, 0L))
+      // TODO: This is agent controlled, once that is wired up
+      .add(CreatureTypeComponent(getNextCreatureId(), CreatureType.ROGUE, ControllerType.SIMPLE_AI, 0L))
       .add(AllegianceComponent(Allegiance.ROGUE))
 
   private val actionQueueSystem = ActionQueueSystem(this)

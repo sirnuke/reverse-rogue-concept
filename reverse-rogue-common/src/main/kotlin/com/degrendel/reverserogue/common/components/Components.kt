@@ -22,8 +22,14 @@ data class WallOrientationComponent(val wallOrientation: WallOrientation) : Comp
 data class RoomComponent(val id: Int, val width: Int, val height: Int) : Component
 
 /** Indicates this entity is a creature. */
-data class CreatureTypeComponent(val id: Int, val type: CreatureType, var cooldown: Long) : Component
+data class CreatureTypeComponent(val id: Int, val type: CreatureType, val controller: ControllerType, var cooldown: Long) : Component
 
 /** Indicates what team this creature belongs to. */
 data class AllegianceComponent(val allegiance: Allegiance) : Component
 
+enum class ControllerType
+{
+  SIMPLE_AI,
+  AGENT,
+  PLAYER
+}
