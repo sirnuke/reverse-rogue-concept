@@ -60,6 +60,7 @@ class RogueWorld(override val frontend: Frontend, override val agent: SoarAgent)
   }
 
   override fun runGame(): Job = GlobalScope.launch {
+    frontend.refreshMap()
     while (true)
     {
       updateWorld()
