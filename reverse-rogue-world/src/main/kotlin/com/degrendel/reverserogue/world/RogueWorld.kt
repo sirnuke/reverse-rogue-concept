@@ -95,9 +95,6 @@ class RogueWorld(override val frontend: Frontend, override val agent: SoarAgent)
         level.moveCreature(action.entity, action.direction)
       }
     }
-    // TODO: Compute the cost?  Alternatively make computeCost part of World, have ActionQueueSystem update itself, and
-    //    expose the computing function to agent and whatnot
-    action.entity.getCreature().cooldown += action.cost
   }
 
   override fun isValidAction(action: Action): Boolean
@@ -114,6 +111,7 @@ class RogueWorld(override val frontend: Frontend, override val agent: SoarAgent)
   {
     // TODO: Make these configurable plus action values
     // TODO: Should a diagonal move cost more than straight?
+    // TODO: Weight move and whatnot by an armor cost?
     return when (action)
     {
       is Sleep -> 100L

@@ -113,42 +113,42 @@ class InGameView(private val application: Application) : BaseView(application.ti
       {
         KeyCode.LEFT, KeyCode.KEY_A, KeyCode.NUMPAD_4 ->
         {
-          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.WEST), this))
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, EightWay.WEST), this))
           Processed
         }
         KeyCode.RIGHT, KeyCode.KEY_D, KeyCode.NUMPAD_6 ->
         {
-          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.EAST), this))
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, EightWay.EAST), this))
           Processed
         }
         KeyCode.UP, KeyCode.KEY_W, KeyCode.NUMPAD_8 ->
         {
-          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.NORTH), this))
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, EightWay.NORTH), this))
           Processed
         }
         KeyCode.DOWN, KeyCode.KEY_X, KeyCode.NUMPAD_2 ->
         {
-          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.SOUTH), this))
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, EightWay.SOUTH), this))
           Processed
         }
         KeyCode.HOME, KeyCode.KEY_Q, KeyCode.NUMPAD_7 ->
         {
-          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.NORTH_WEST), this))
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, EightWay.NORTH_WEST), this))
           Processed
         }
         KeyCode.PAGE_UP, KeyCode.KEY_E, KeyCode.NUMPAD_9 ->
         {
-          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.NORTH_EAST), this))
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, EightWay.NORTH_EAST), this))
           Processed
         }
         KeyCode.END, KeyCode.KEY_Z, KeyCode.NUMPAD_1 ->
         {
-          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.SOUTH_WEST), this))
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, EightWay.SOUTH_WEST), this))
           Processed
         }
         KeyCode.PAGE_DOWN, KeyCode.KEY_C, KeyCode.NUMPAD_3 ->
         {
-          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, 100L, EightWay.SOUTH_EAST), this))
+          Zircon.eventBus.publish(PlayerActionInput(Move(application.world.conjurer, EightWay.SOUTH_EAST), this))
           Processed
         }
         KeyCode.KEY_S, KeyCode.NUMPAD_5 ->

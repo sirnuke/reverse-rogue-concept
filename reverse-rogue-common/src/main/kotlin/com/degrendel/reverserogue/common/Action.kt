@@ -15,19 +15,13 @@ enum class EightWay(val x: Int, val y: Int, val diagonal: Boolean)
   ;
 }
 
-// TODO: Cost should be computed somewhere in World, not passed in
 sealed class Action
 {
   abstract val entity: Entity
-  abstract val cost: Long
 }
 
 /** This entity wants to move. */
-data class Move(override val entity: Entity, override val cost: Long, val direction: EightWay) : Action()
+data class Move(override val entity: Entity, val direction: EightWay) : Action()
 
 /** This entity wants to skip their turn. */
 data class Sleep(override val entity: Entity) : Action()
-{
-  // TODO: Get the default value from somewhere else (GameConfig?)
-  override val cost: Long = 100L
-}
