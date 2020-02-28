@@ -9,30 +9,33 @@ interface Level
   {
     const val HEIGHT = 32
     const val WIDTH = 64
+    const val FLOORS = 10
 
     // NOTE: Must be odd (required by Noise4j)
     const val MINIMUM_ROOM_SIZE = 5
     const val MAXIMUM_NUMBER_OF_ROOMS = 10
   }
 
-  fun getSquare(position: Position): Entity
+  val floor: Int
 
-  fun getCreature(position: Position): Entity?
+  fun getSquare(x: Int, y: Int): Entity
+
+  fun getCreature(x: Int, y: Int): Entity?
 
   fun canMoveTo(from: Position, direction: EightWay): Boolean
 
   fun inBounds(position: Position): Boolean
 }
 
-data class Position(val x: Int, val y: Int)
+data class Position(val x: Int, val y: Int, val floor: Int)
 {
-  fun add(position: Position) = Position(x + position.x, y + position.y)
+  fun add(position: Position) = Position(x + position.x, y + position.y, floor)
 
-  fun move(direction: EightWay) = Position(x + direction.x, y + direction.y)
+  fun move(direction: EightWay) = Position(x + direction.x, y + direction.y, floor)
 
-  fun move(direction: Cardinal) = Position(x + direction.x, y + direction.y)
+  fun move(direction: Cardinal) = Position(x + direction.x, y + direction.y, floor)
 
-  fun random(width: Int, height: Int) = Position(x + Random.nextInt(width), y + Random.nextInt(height))
+  fun random(width: Int, height: Int) = Position(x + Random.nextInt(width), y + Random.nextInt(height), floor)
 }
 
 enum class SquareType(val blocked: Boolean)

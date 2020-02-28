@@ -2,23 +2,22 @@ package com.degrendel.reverserogue.common
 
 import com.badlogic.ashley.core.Engine
 import com.badlogic.ashley.core.Entity
+import kotlinx.coroutines.Job
 
 interface World
 {
   val ecs: Engine
-  val currentLevel: Level?
 
   val conjurer: Entity
   val rogue: Entity
 
-  fun generateLevel(): Level
+  fun updateWorld()
 
-  fun update()
+  fun runGame(): Job
 
-  fun spawn()
-  fun move(entity: Entity, direction: EightWay)
+  fun isValidAction(action: Action): Boolean
 
-  fun updateCreature(creature: Entity)
+  fun getLevel(floor: Int): Level
 }
 
 
