@@ -44,6 +44,7 @@ class InGameView(private val application: Application) : BaseView(application.ti
   // All spawned creatures that have been drawn at least once
   private val drawnCreatures = Family.all(PositionComponent::class.java, CreatureTypeComponent::class.java, DrawnAtComponent::class.java).get()
 
+  // Do we need a separate layer for stuff like visibility and known indicators?
   private val mapLayer = Layer.newBuilder()
       .withOffset(MAP_OFFSET_X, MAP_OFFSET_Y)
       .withSize(Level.WIDTH, Level.HEIGHT)
@@ -194,6 +195,7 @@ class InGameView(private val application: Application) : BaseView(application.ti
     }
     // TODO: To add blocking animations, make a list of suspendCoroutines
     // val blockingAnimations = mutableListOf()
+    // TODO: Might be nice to have this be a map as well
     val level = application.world.getLevel(floor)
     (0 until Level.WIDTH).forEach { x ->
       (0 until Level.HEIGHT).forEach { y ->
