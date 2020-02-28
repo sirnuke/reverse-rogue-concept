@@ -64,10 +64,29 @@ class RogueWorld(override val frontend: Frontend, override val agent: SoarAgent)
     while (true)
     {
       updateWorld()
-      actionQueueSystem.execute()
+      val action = actionQueueSystem.execute()
+      executeAction(action)
+      // TODO: Execution Action
       frontend.refreshMap()
       delay(100L)
     }
+  }
+
+  private fun executeAction(action: Action)
+  {
+    assert(isValidAction(action))
+    when (action)
+    {
+      is Sleep -> L.debug("Sleeping...")
+      is Move -> {
+        val position = action.entity.getPosition()
+        val level = levels.getValue(position.floor)
+        level.moveCreature(action.entity, action.direction)
+      }
+    }
+    // TODO: Compute the cost?  Alternatively make computeCost part of World, have ActionQueueSystem update itself, and
+    //    expose the computing function to agent and whatnot
+    action.entity.getCreature().cooldown += action.cost
   }
 
   override fun isValidAction(action: Action): Boolean
