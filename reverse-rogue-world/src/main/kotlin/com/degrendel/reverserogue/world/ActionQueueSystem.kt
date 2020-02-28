@@ -30,7 +30,7 @@ class ActionQueueSystem(private val world: World) : EntityListener
 
   override fun entityAdded(entity: Entity)
   {
-    L.info("Adding entity {}", entity)
+    L.info("Adding entity {} to the action queue", entity)
     queue.add(entity)
   }
 
@@ -43,7 +43,7 @@ class ActionQueueSystem(private val world: World) : EntityListener
   {
     val entity = queue.poll()
     val creature = entity.getCreature()
-    L.info("Executing turn for {}, {}", entity, creature)
+    L.debug("Executing turn for {}, {}", entity, creature)
     val action = when (creature.controller)
     {
       ControllerType.AGENT -> TODO("Agent isn't supported yet")
@@ -51,6 +51,7 @@ class ActionQueueSystem(private val world: World) : EntityListener
       ControllerType.SIMPLE_AI -> Sleep(entity)
       ControllerType.PLAYER -> world.frontend.getPlayerInput()
     }
+    // TODO: The time unit logic isn't quite correct here
     creature.cooldown += world.computeCost(action)
     queue.add(entity)
     return action
