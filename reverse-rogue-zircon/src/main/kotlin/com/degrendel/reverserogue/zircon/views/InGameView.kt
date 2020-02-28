@@ -11,15 +11,9 @@ import com.degrendel.reverserogue.zircon.components.DrawnAtComponent
 import com.degrendel.reverserogue.zircon.components.getDrawnAt
 import com.degrendel.reverserogue.zircon.events.PlayerActionInput
 import com.degrendel.reverserogue.zircon.toPosition
-import com.degrendel.reverserogue.zircon.toPosition3D
-import kotlinx.collections.immutable.persistentHashMapOf
 import org.hexworks.zircon.api.ColorThemes
-import org.hexworks.zircon.api.GameComponents
-import org.hexworks.zircon.api.builder.game.GameAreaBuilder
-import org.hexworks.zircon.api.data.Position3D
-import org.hexworks.zircon.api.data.Size3D
+import org.hexworks.zircon.api.data.Position
 import org.hexworks.zircon.api.data.Tile
-import org.hexworks.zircon.api.data.base.BaseBlock
 import org.hexworks.zircon.api.graphics.Layer
 import org.hexworks.zircon.api.uievent.*
 import org.hexworks.zircon.api.view.base.BaseView
@@ -59,6 +53,8 @@ class InGameView(private val application: Application) : BaseView(application.ti
       .withSize(Level.WIDTH, Level.HEIGHT)
       .build()
 
+  private val creatureMap = mutableMapOf<Position, Tile>()
+
   init
   {
     screen.theme = ColorThemes.adriftInDreams()
@@ -74,7 +70,7 @@ class InGameView(private val application: Application) : BaseView(application.ti
           CreatureType.ROGUE -> Tiles.rogueTile
           CreatureType.CONJURER -> Tiles.conjurerTile
         }
-        creatureLayer.draw(tile, position.toPosition())
+        creatureMap[position.toPosition()] = tile
         entity.add(DrawnAtComponent(position))
       }
 
@@ -167,7 +163,16 @@ class InGameView(private val application: Application) : BaseView(application.ti
   fun runGameLoop()
   {
     L.info("Starting game loop")
+    mapLayer.clear()
+    creatureLayer.clear()
+    // TODO: Far too many creature type lookups
     application.world.ecs.getEntitiesFor(spawnedCreatures).forEach { creature ->
+      val tile = when (creature.getCreature().type)
+      {
+        CreatureType.ROGUE -> Tiles.rogueTile
+        CreatureType.CONJURER -> Tiles.conjurerTile
+      }
+      creatureMap[creature.getPosition().toPosition()] = tile
       creature.add(DrawnAtComponent(creature.getPosition()))
     }
 
@@ -184,11 +189,10 @@ class InGameView(private val application: Application) : BaseView(application.ti
       L.info("Scrolling to {}", targetFloor)
       floor = targetFloor
       mapLayer.clear()
+      creatureMap.clear()
+      creatureLayer.clear()
     }
     // TODO: To add blocking animations, make a list of suspendCoroutines
-    // TODO: Clearing this layer is causing flicker - but the caller should know if it's been changed.
-    //    Alternatively, store this as a TileMap, which should be faster
-    creatureLayer.clear()
     // val blockingAnimations = mutableListOf()
     val level = application.world.getLevel(floor)
     (0 until Level.WIDTH).forEach { x ->
@@ -203,23 +207,35 @@ class InGameView(private val application: Application) : BaseView(application.ti
           SquareType.WALL -> Tiles.wallTiles.getValue(square.getWallOrientation())
           SquareType.DOOR -> Tiles.doorTile
         }
-        mapLayer.draw(tile, org.hexworks.zircon.api.data.Position.create(x, y))
+        mapLayer.draw(tile, Position.create(x, y))
       }
     }
     application.world.ecs.getEntitiesFor(drawnCreatures).forEach { creature ->
+      // TODO: This will need to be completely rethought if a creature can have multiple tiles
+      // TODO: This is so nasty
       val position = creature.getPosition()
       if (position.floor != floor) return@forEach
       val drawn = creature.getDrawnAt()
+      // TODO: This short circuit is supposed to skip updating the tile if it hasn't moved, however it breaks changing
+      //  levels.  Fix is probably confirming the tile is in creatureMap, but not a significant performance boost anyway
+      //if (drawn == position) return@forEach
       val tile = when (creature.getCreature().type)
       {
         CreatureType.ROGUE -> Tiles.rogueTile
         CreatureType.CONJURER -> Tiles.conjurerTile
       }
-      creatureLayer.draw(tile, position.toPosition())
+      // TODO: If E1 is drawn on A moves to B, and E2 is drawn on B moves to C, need to make sure they don't step on
+      //    each other for B -- is this logic sufficient?
+      val drawnZircon = drawn.toPosition()
+      if (creatureMap[drawnZircon] == tile)
+        creatureMap.remove(drawnZircon)
+      creatureMap[position.toPosition()] = tile
       creature.add(DrawnAtComponent(position))
       // if (drawn != position && drawn.floor == position.floor)
       // Add movement animation?
     }
+
+    creatureLayer.draw(creatureMap)
 
     // Wait on list of firing animations
   }
