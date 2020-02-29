@@ -27,4 +27,26 @@ class NavigationMap(val level: Level, val sources: List<Position>)
       .eightWayNeighbors()
       .filter { _data[it.x][it.y] == Int.MAX_VALUE }
       .filter { level.isNavigable(it) }
+
+  fun getMove(position: Position): EightWay?
+  {
+    // TODO: This is a bit icky
+    var lowest = mutableListOf<EightWay>()
+    var cost = Int.MAX_VALUE
+    EightWay.values().filter { level.isNavigable(position.move(it)) }.forEach {
+      val neighbor = position.move(it)
+      val neighborCost = data[neighbor.x][neighbor.y]
+      if (neighborCost < cost)
+      {
+        cost = data[neighbor.x][neighbor.y]
+        lowest = mutableListOf(it)
+      }
+      else if (neighborCost == cost)
+        lowest.add(it)
+    }
+    return if (lowest.isEmpty())
+      null
+    else
+      lowest.shuffled().first()
+  }
 }
