@@ -17,10 +17,12 @@ class RogueWorld(override val frontend: Frontend, override val agent: SoarAgent)
     private val L by logger()
   }
 
+  val simpleAI = BehaviorAI(this)
+
   override val ecs = Engine()
   private val actionQueueSystem = ActionQueueSystem(this)
 
-  private val allSpawnedEntities = Family.all(CreatureTypeComponent::class.java, PositionComponent::class.java).get()
+  private val allSpawnedEntities = Family.all(CreatureComponent::class.java, PositionComponent::class.java).get()
   private val levels = mutableMapOf<Int, LevelState>()
 
   init
@@ -33,11 +35,11 @@ class RogueWorld(override val frontend: Frontend, override val agent: SoarAgent)
   private var clock = 0L
 
   override val conjurer: Entity = Entity()
-      .add(CreatureTypeComponent(getNextCreatureId(), CreatureType.CONJURER, ControllerType.PLAYER, 0L))
+      .add(CreatureComponent(getNextCreatureId(), CreatureType.CONJURER, PlayerControlled, active = true, cooldown = 0L))
       .add(AllegianceComponent(Allegiance.CONJURER))
   override val rogue: Entity = ecs.createEntity()
       // TODO: This is agent controlled, once that is wired up
-      .add(CreatureTypeComponent(getNextCreatureId(), CreatureType.ROGUE, ControllerType.SIMPLE_AI, 0L))
+      .add(CreatureComponent(getNextCreatureId(), CreatureType.ROGUE, SimpleAI(listOf(MoveTowardsConjurer())), active = true, cooldown = 0L))
       .add(AllegianceComponent(Allegiance.ROGUE))
 
   init

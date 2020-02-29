@@ -2,15 +2,11 @@ package com.degrendel.reverserogue.world
 
 import com.badlogic.ashley.core.Entity
 import com.badlogic.ashley.core.EntityListener
-import com.degrendel.reverserogue.common.Action
-import com.degrendel.reverserogue.common.Sleep
-import com.degrendel.reverserogue.common.World
-import com.degrendel.reverserogue.common.components.ControllerType
+import com.degrendel.reverserogue.common.*
 import com.degrendel.reverserogue.common.components.getCreature
-import com.degrendel.reverserogue.common.logger
 import java.util.*
 
-class ActionQueueSystem(private val world: World) : EntityListener
+class ActionQueueSystem(private val world: RogueWorld) : EntityListener
 {
   companion object
   {
@@ -46,10 +42,9 @@ class ActionQueueSystem(private val world: World) : EntityListener
     L.debug("Executing turn for {}, {}", entity, creature)
     val action = when (creature.controller)
     {
-      ControllerType.AGENT -> TODO("Agent isn't supported yet")
-      // TODO: Write actual simple AI
-      ControllerType.SIMPLE_AI -> Sleep(entity)
-      ControllerType.PLAYER -> world.frontend.getPlayerInput()
+      is PlayerControlled -> world.frontend.getPlayerInput()
+      is AgentAI -> TODO("Agent isn't supported yet")
+      is SimpleAI -> world.simpleAI.compute((creature.controller as SimpleAI).behaviors, entity)
     }
     // TODO: The time unit logic isn't quite correct here
     creature.cooldown += world.computeCost(action)

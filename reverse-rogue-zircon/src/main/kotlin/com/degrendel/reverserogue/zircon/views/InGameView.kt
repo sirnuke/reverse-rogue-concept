@@ -39,10 +39,10 @@ class InGameView(private val application: Application) : BaseView(application.ti
   private val scrollToFloor = AtomicInteger(floor)
 
   // All spawned creatures
-  private val spawnedCreatures = Family.all(PositionComponent::class.java, CreatureTypeComponent::class.java).get()
+  private val spawnedCreatures = Family.all(PositionComponent::class.java, CreatureComponent::class.java).get()
 
   // All spawned creatures that have been drawn at least once
-  private val drawnCreatures = Family.all(PositionComponent::class.java, CreatureTypeComponent::class.java, DrawnAtComponent::class.java).get()
+  private val drawnCreatures = Family.all(PositionComponent::class.java, CreatureComponent::class.java, DrawnAtComponent::class.java).get()
 
   // Do we need a separate layer for stuff like visibility and known indicators?
   private val mapLayer = Layer.newBuilder()
