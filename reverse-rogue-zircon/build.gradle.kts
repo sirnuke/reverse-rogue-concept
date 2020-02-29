@@ -1,5 +1,8 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
   application
+  id("com.github.johnrengelman.shadow") version "5.2.0"
 }
 
 application {
@@ -24,4 +27,9 @@ dependencies {
   implementation(project(":reverse-rogue-common"))
   implementation(project(":reverse-rogue-world"))
   implementation(project(":reverse-rogue-agent"))
+}
+
+tasks.withType<ShadowJar> {
+  baseName = "reverse-rogue"
+  classifier = ""
 }
